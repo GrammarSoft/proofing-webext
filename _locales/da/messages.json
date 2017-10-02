@@ -1,0 +1,18 @@
+{
+	"extName": {
+		"description": "Extension name",
+		"message": "Grammatikforslag"
+	},
+	"extDescription": {
+		"description": "Extension desciption",
+		"message": "Avanceret grammatik- og stavekontrol"
+	},
+	"extTooltip": {
+		"description": "Extension icon tooltip",
+		"message": "Check grammatik"
+	},
+	"_trailing": {
+		"description": "",
+		"message": ""
+	}
+}

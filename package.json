@@ -1,0 +1,11 @@
+{
+	"name": "danproof-webextension",
+	"version": "0.0.1",
+	"homepage": "https://retmig.dk/",
+	"license": "CC-BY-NC-ND-4.0",
+	"dependencies": {
+		"dompurify": "^1.0.2",
+		"featherlight": "^1.7.9",
+		"jquery": "^3.2.1"
+	}
+}

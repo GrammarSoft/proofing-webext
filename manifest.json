@@ -3,7 +3,7 @@
 
 	"name": "__MSG_extName__",
 	"description": "__MSG_extDescription__",
-	"version": "1.0",
+	"version": "0.0.1",
 	"default_locale": "da",
 	"icons": {
 		"96": "icon96.png"
@@ -21,5 +21,23 @@
 	"permissions": [
 		"activeTab",
 		"storage"
+	],
+	"background": {
+		"scripts": ["background.js"],
+		"persistent": false
+	},
+	"content_scripts": [
+		{
+			"matches": ["http://*/*", "https://*/*", "file:///*"],
+			"css": [
+				"vendor/featherlight/featherlight.min.css"
+			],
+			"js": [
+				"vendor/purify.min.js",
+				"vendor/jquery.min.js",
+				"vendor/featherlight/featherlight.min.js",
+				"contentscript.js"
+			]
+		}
 	]
 }

@@ -8,10 +8,10 @@
 <body>
 <p><input type="text" value="Den røde hus."></p>
 <p><textarea>Det rød bil.</textarea></p>
-<p><div contenteditable="true">De malede husen.</div></p>
+<p><div contenteditable="true">De <b>malede</b> husen.</div></p>
 <p><iframe id="iframe"></iframe></p>
 <script>
-let html = '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body contenteditable="true">De malede bilet.</body></html>';
+let html = '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body contenteditable="true">De <b>malede</b> bilet.</body></html>';
 document.getElementById('iframe').srcdoc = html;
 </script>
 </body>

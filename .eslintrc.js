@@ -4,6 +4,7 @@ module.exports = {
 	"env": {
 		"browser": true,
 		"es6": true,
+		"jquery": true,
 		"webextensions": true,
 	},
 	"parserOptions": {

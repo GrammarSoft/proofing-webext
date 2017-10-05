@@ -6,7 +6,7 @@
 	"version": "0.0.1",
 	"default_locale": "da",
 	"icons": {
-		"96": "icon96.png"
+		"96": "images/icon96.png"
 	},
 
 	"author": "GrammarSoft ApS",
@@ -15,7 +15,7 @@
 	"offline_enabled": false,
 	"browser_action": {
 		"default_title": "__MSG_extTooltip__",
-		"default_popup": "popup.html"
+		"default_popup": "html/popup.html"
 	},
 	"incognito": "spanning",
 	"permissions": [
@@ -23,20 +23,22 @@
 		"storage"
 	],
 	"background": {
-		"scripts": ["background.js"],
+		"scripts": ["js/background.js"],
 		"persistent": false
 	},
 	"content_scripts": [
 		{
 			"matches": ["http://*/*", "https://*/*", "file:///*"],
 			"css": [
-				"vendor/featherlight/featherlight.min.css"
+				"vendor/featherlight/featherlight.css"
 			],
 			"js": [
 				"vendor/purify.min.js",
 				"vendor/jquery.min.js",
 				"vendor/featherlight/featherlight.min.js",
-				"contentscript.js"
+				"js/error_types.js",
+				"js/shared.js",
+				"js/contentscript.js"
 			]
 		}
 	]

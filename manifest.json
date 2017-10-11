@@ -26,6 +26,10 @@
 		"scripts": ["js/background.js"],
 		"persistent": false
 	},
+	"web_accessible_resources": [
+		"css/*",
+		"js/*"
+	],
 	"content_scripts": [
 		{
 			"matches": ["http://*/*", "https://*/*", "file:///*"],

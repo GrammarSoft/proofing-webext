@@ -1,3 +1,9 @@
+/*!
+ * Copyright 2016-2017 GrammarSoft ApS <info@grammarsoft.com> at https://grammarsoft.com/
+ * All Rights Reserved
+ * Linguistic backend by Eckhard Bick <eckhard.bick@gmail.com>
+ * Frontend by Tino Didriksen <mail@tinodidriksen.com>
+ */
 'use strict';
 
 Array.prototype.unique = function() {
@@ -10,6 +16,7 @@ Array.prototype.unique = function() {
 	return unique;
 };
 
+/* exported Defs */
 let Defs = {
 	CAP_ADMIN:	  (1 <<	 0),
 	CAP_COMMA:	  (1 <<	 1),
@@ -44,6 +51,18 @@ let Defs = {
 	'akututor-student': 'Akututor Studerende',
 };
 Defs.OPT_DP_IGNORE_UNKNOWN = Defs.OPT_DP_IGNORE_NAMES|Defs.OPT_DP_IGNORE_COMP|Defs.OPT_DP_IGNORE_ABBR|Defs.OPT_DP_IGNORE_OTHER;
+
+/* exported g_conf_defaults */
+let g_conf_defaults = {
+	opt_onlyConfident: false,
+	opt_ignUNames: false,
+	opt_ignUComp: false,
+	opt_ignUAbbr: false,
+	opt_ignUOther: false,
+	opt_ignMaj: false,
+	opt_useDictionary: true,
+	opt_colorBlind: false,
+};
 
 /* exported escHTML */
 function escHTML(t) {

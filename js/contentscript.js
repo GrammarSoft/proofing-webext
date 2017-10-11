@@ -1,3 +1,9 @@
+/*!
+ * Copyright 2016-2017 GrammarSoft ApS <info@grammarsoft.com> at https://grammarsoft.com/
+ * All Rights Reserved
+ * Linguistic backend by Eckhard Bick <eckhard.bick@gmail.com>
+ * Frontend by Tino Didriksen <mail@tinodidriksen.com>
+ */
 'use strict';
 /* globals getCommonParent */
 /* globals escHTML */
@@ -5,6 +11,9 @@
 /* globals error_types */
 /* globals types_red */
 /* globals types_yellow */
+/* globals g_conf_defaults */
+
+let g_conf = Object.assign({}, g_conf_defaults);
 
 function getTextOrElement() {
 	let rv = {e: null, t: null};
@@ -61,6 +70,77 @@ function getTextOrElement() {
 	return rv;
 }
 
+function isInDictionary(e) {
+	return false;
+}
+
+function createError(error) {
+	let col = 'green';
+	let types = error[1].split(/ /g);
+	for (let i=0 ; i<types.length ; ++i) {
+		if (types_yellow.hasOwnProperty(types[i])) {
+			col = 'yellow';
+		}
+		if (types_red.hasOwnProperty(types[i])) {
+			col = 'red';
+			break;
+		}
+	}
+	for (let i=0 ; i<types.length ; ++i) {
+		if (types[i] === '@green') {
+			col = 'green';
+		}
+	}
+
+	if (g_conf.opt_useDictionary && col === 'yellow' && isInDictionary(error[0])) {
+		if (error[2].length == 0) {
+			console.log(['yellow-discard', error[0]]);
+			return;
+		}
+
+		console.log(['yellow-green', error[0]]);
+		col = 'green';
+	}
+
+	if (g_conf.opt_onlyConfident && col !== 'red') {
+		return;
+	}
+
+	let space = 0;
+	if (!error[2] && /@-?comp(-|\t|$)/.test(error[1])) {
+		error[2] = error[0];
+	}
+	if ($.inArray('@comp-', types) !== -1) {
+		error[0] += ' ';
+		space = 1;
+	}
+	else if ($.inArray('@-comp', types) !== -1) {
+		error[0] = ' ' + error[0];
+		space = -1;
+	}
+	else if ($.inArray('@comp-:-', types) !== -1) {
+		error[0] += ' ';
+		error[2] = error[2].replace(/(\t|$)/g, '‐$1'); // -$1 puts after words because matching \t|$
+		space = 1;
+	}
+
+	if ($.inArray('@-comp', types) === -1 && $.inArray('@insert', types) === -1) {
+		error[0] = $.trim(error[0]);
+	}
+
+	let alt = '';
+	if (g_conf.opt_colorBlind) {
+		alt = ' alt';
+	}
+
+	let html = '<span class="error error-'+col+alt+'" data-types="'+escHTML(error[1])+'" data-sugs="'+escHTML(error[2])+'">'+escHTML(error[0])+'</span>';
+	if (space === 0) {
+		html = ' '+html;
+	}
+
+	return {space, html};
+}
+
 function parseResult(rv) {
 	if (!rv.hasOwnProperty('c')) {
 		$.featherlight.close();
@@ -68,8 +148,15 @@ function parseResult(rv) {
 		return;
 	}
 
-	let txt = sanitize_result(rv.c);
+	const popup = $.featherlight.current().$content.get(0);
+	if (popup.hasAttribute('src')) {
+		popup.removeAttribute('src');
+		popup.srcdoc = '<!DOCTYPE html><html><head><meta charset="UTF-8"><link href="chrome-extension://'+chrome.i18n.getMessage('@@extension_id')+'/css/inline.css" rel="stylesheet" type="text/css"></head><body><div id="result"></div></body></html>';
+	}
 
+	let rs = '';
+
+	let txt = sanitize_result(rv.c);
 	let ps = $.trim(txt.replace(/\n+<\/s>\n+/g, "\n\n")).split(/<\/s\d+>/);
 	for (let i=0 ; i<ps.length ; ++i) {
 		let cp = $.trim(ps[i]);
@@ -79,7 +166,8 @@ function parseResult(rv) {
 
 		let lines = cp.split(/\n/);
 		let id = lines[0].replace(/^<s(.+)>$/, '$1');
-		let txt = '';
+		rs += '<p id="s'+id+'">';
+		let space = 0;
 
 		for (let j=1 ; j<lines.length ; ++j) {
 			// Ignore duplicate opening tags
@@ -146,26 +234,24 @@ function parseResult(rv) {
 						ws.push(nws[k]);
 						continue;
 					}
-					/*
-					if (opt_onlyConfident && !types_red.hasOwnProperty(nws[k])) {
+					if (g_conf.opt_onlyConfident && !types_red.hasOwnProperty(nws[k])) {
 						continue;
 					}
-					if (opt_ignUNames && nws[k] === '@proper') {
+					if (g_conf.opt_ignUNames && nws[k] === '@proper') {
 						continue;
 					}
-					if (opt_ignUComp && nws[k] === '@new') {
+					if (g_conf.opt_ignUComp && nws[k] === '@new') {
 						continue;
 					}
-					if (opt_ignUAbbr && nws[k] === '@abbreviation') {
+					if (g_conf.opt_ignUAbbr && nws[k] === '@abbreviation') {
 						continue;
 					}
-					if (opt_ignUOther && nws[k] === '@check!') {
+					if (g_conf.opt_ignUOther && nws[k] === '@check!') {
 						continue;
 					}
-					if (opt_ignMaj && (nws[k] === '@upper' || nws[k] === '@lower')) {
+					if (g_conf.opt_ignMaj && (nws[k] === '@upper' || nws[k] === '@lower')) {
 						continue;
 					}
-					//*/
 					ws.push(nws[k]);
 				}
 				nws = ws;
@@ -201,29 +287,39 @@ function parseResult(rv) {
 			}
 
 			if (w.length > 1) {
-				console.log([id, txt, w]);
-				//errorCreateInline(id, txt, w);
+				let rv = createError(w);
+				rs += rv.html;
+				space = rv.space;
 			}
-			if (w[0] !== ',' || w.length === 1) {
-				if (w[0].search(/^[-,.:;?!$*½§£$%&()={}+]$/) === -1) {
-					txt += ' ';
+			else if (w[0] !== ',' || w.length === 1) {
+				if (space === 0 && w[0].search(/^[-,.:;?!$*½§£$%&()={}+]$/) === -1) {
+					rs += ' ';
 				}
-				txt += w[0];
+				space = 0;
+				rs += '<span class="word">'+w[0]+'</span>';
 			}
 		}
+		rs += '</p>';
 	}
 
-	const p = $.featherlight.current().$content.get(0);
-	p.removeAttribute('src');
-	p.srcdoc = '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body></body></html>';
 	setTimeout(() => {
-		p.contentWindow.document.getElementsByTagName('BODY')[0].innerHTML = '<pre>'+escHTML(rv.c)+'</pre>';
+		popup.contentWindow.document.getElementById('result').innerHTML += rs;
 	}, 100);
-	console.log([p, rv]);
+	console.log([popup, rv, rs]);
 }
 
 /* exported checkActiveElement */
 function checkActiveElement() {
+	if ($.featherlight.current()) {
+		$.featherlight.close();
+		return;
+	}
+
+	chrome.storage.sync.get(g_conf_defaults, (items) => {
+		g_conf = items;
+		console.log(g_conf);
+	});
+
 	let e = getTextOrElement();
 	console.log(e);
 	//return;

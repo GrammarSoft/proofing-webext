@@ -40,7 +40,7 @@
 			],
 			"js": [
 				"vendor/purify.min.js",
-				"vendor/jquery.js",
+				"vendor/jquery.min.js",
 				"vendor/featherlight.min.js",
 				"vendor/popper.min.js",
 				"vendor/bootstrap.min.js",

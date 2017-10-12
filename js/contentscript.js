@@ -14,7 +14,10 @@
 /* globals g_conf_defaults */
 
 let g_conf = Object.assign({}, g_conf_defaults);
+let context = null;
 let cmarking = null;
+let floater = null;
+let floater_doc = null;
 
 function getTextOrElement() {
 	let rv = {e: null, t: null};
@@ -75,8 +78,31 @@ function isInDictionary(e) {
 	return false;
 }
 
+function addToDictionary() {
+	let word = cmarking.text();
+	if (!isInDictionary(word)) {
+		addToDictionary_helper(word);
+		if (opt_storage) {
+			opt_dictionary.push(word);
+			let dict = opt_dictionary.join('\t').replace(/^\s+/g, '').replace(/\s+$/g, '');
+			localStorage.setItem('opt_dictionary', dict);
+		}
+	}
+
+	let p = $(floater);
+	let cs = p.find('span.marking-yellow').each(function() {
+		cmarking = $(this);
+		if (cmarking.text() !== word && cmarking.text().toUpperCase() !== word.toUpperCase()) {
+			return;
+		}
+		markingYellow();
+	});
+	ga_log('ui', 'dict-add', word);
+	log_click({'dict-add': word});
+}
+
 function markingPopup(c, exp) {
-	var p = $(c).closest('body');
+	let p = $(c).closest('body');
 	p.find('span.marking').popover('dispose').removeClass('marking-selected');
 	p.find('.popover').remove();
 
@@ -89,52 +115,52 @@ function markingPopup(c, exp) {
 	cmarking.focus().addClass('marking-selected');
 	//console.log([c.offset(), c.width(), p.width()]);
 
-	var all_upper = is_upper(cmarking.text());
-	var first_upper = all_upper || is_upper(cmarking.text().charAt(0));
+	let all_upper = is_upper(cmarking.text());
+	let first_upper = all_upper || is_upper(cmarking.text().charAt(0));
 
-	var types = cmarking.attr('data-types');
+	let types = cmarking.attr('data-types');
 	if (types.indexOf('@lower') !== -1) {
 		all_upper = first_upper = false;
 	}
 
-	var html = '<div id="popup">';
-	var crs = cmarking.attr('data-sugs').split('\t');
-	for (var c=0 ; c<crs.length ; ++c) {
+	let html = '<div id="popup">';
+	let crs = cmarking.attr('data-sugs').split('\t');
+	for (let c=0 ; c<crs.length ; ++c) {
 		if (crs[c].length === 0) {
 			continue;
 		}
-		var txt = crs[c];
+		let txt = crs[c];
 		if (all_upper) {
 			txt = txt.toUpperCase();
 		}
 		else if (first_upper) {
 			txt = uc_first(txt);
 		}
-		html += '<div class="action"><a onclick="window.parent.markingAccept(this);"><span class="icon icon-accept"></span><span>'+escHTML(txt)+'</span></a></div>';
+		html += '<div class="action"><a href="#" class="accept"><span class="icon icon-accept"></span><span>'+escHTML(txt)+'</span></a></div>';
 	}
 	if (types.indexOf('@nil') !== -1) {
-		html += '<div class="action"><a onclick="window.parent.markingAccept();"><span class="icon icon-discard"></span><span>Fjern ordet</span></a></div>';
+		html += '<div class="action"><a href="#" class="accept"><span class="icon icon-discard"></span><span>Fjern ordet</span></a></div>';
 	}
 	if (types.indexOf('@insert') !== -1) {
-		html += '<div class="action"><a onclick="window.parent.markingAccept();"><span class="icon icon-accept"></span><span>Indsæt ordet</span></a></div>';
+		html += '<div class="action"><a href="#" class="accept"><span class="icon icon-accept"></span><span>Indsæt ordet</span></a></div>';
 	}
 	if (cmarking.hasClass('marking-yellow')) {
-		html += '<div class="action"><a onclick="window.parent.addToDictionary();"><span class="icon icon-accept"></span><span>Tilføj til ordbogen</span></a></div>';
+		html += '<div class="action"><a href="#" class="dict"><span class="icon icon-accept"></span><span>Tilføj til ordbogen</span></a></div>';
 	}
 	if (types.indexOf('@question') !== -1) {
-		html += '<div class="action"><a onclick="window.parent.markingDiscard();"><span class="icon icon-accept"></span><span>Ok</span></a></div>';
+		html += '<div class="action"><a href="#" class="discard"><span class="icon icon-accept"></span><span>Ok</span></a></div>';
 	}
 	else {
-		html += '<div class="action"><a onclick="window.parent.showInput();"><span class="icon icon-accept"></span><span>Ret selv…</span></a></div>';
-		html += '<div class="action"><a onclick="window.parent.markingDiscard();"><span class="icon icon-discard"></span><span>Ignorer</span></a></div>';
+		html += '<div class="action"><a href="#" class="input"><span class="icon icon-accept"></span><span>Ret selv…</span></a></div>';
+		html += '<div class="action"><a href="#" class="discard"><span class="icon icon-discard"></span><span>Ignorer</span></a></div>';
 	}
 	html += '</div>';
 	html += '<div id="explanation">';
-	var ts = cmarking.attr('data-types').split(/ /g);
-	var exps = {};
-	var en = exp ? 2 : 1;
-	for (var i=0 ; i<ts.length ; ++i) {
-		var et = marking_types[ts[i]] ? marking_types[ts[i]][en] : (ts[i] + ' ');
+	let ts = cmarking.attr('data-types').split(/ /g);
+	let exps = {};
+	let en = exp ? 2 : 1;
+	for (let i=0 ; i<ts.length ; ++i) {
+		let et = marking_types[ts[i]] ? marking_types[ts[i]][en] : (ts[i] + ' ');
 		et = '<p>'+et.replace(/(<\/h\d>)/g, '$1<br><br>').replace(/(<br>\s*)+<br>\s*/g, '</p><p>')+'</p>';
 		exps[et] = et.replace(/<p>\s*<\/p>/g, '');
 	}
@@ -151,11 +177,15 @@ function markingPopup(c, exp) {
 		html: true,
 		placement: 'bottom',
 	}).on('shown.bs.popover', function() {
-		var pop = p.find('div.popover');
+		let pop = p.find('div.popover');
 		//pop.scrollintoview();
 		pop.find('a[target="_blank"]').off().on('click', function() {
 			window.open($(this).attr('href'));
 		});
+		pop.find('a.accept').off().on('click', markingAccept);
+		pop.find('a.discard').off().on('click', markingDiscard);
+		pop.find('a.dict').off().on('click', addToDictionary);
+		//pop.find('a.input').off().on('click', showInput);
 	});
 	cmarking.popover('show');
 }
@@ -234,6 +264,94 @@ function createMarking(marking) {
 	return {space, html};
 }
 
+function markingDo(rpl) {
+	let p = $(floater_doc);
+	let markings = p.find('span.marking');
+	markings.popover('dispose');
+	p.find('.popover').remove();
+	$('#dg_input').modal('hide');
+	if (!cmarking) {
+		return;
+	}
+
+	let c = 0;
+	for (let i=0 ; i<markings.length ; ++i) {
+		if (markings[i] === cmarking.get(0)) {
+			c = i;
+		}
+	}
+
+	cmarking.replaceWith(rpl);
+	cmarking = null;
+
+	if (p.find('span.marking').length == 0) {
+		$('#btn-correct-all,#btn-wrong-all,#btn-close').addClass('disabled');
+	}
+	else {
+		markings = p.find('span.marking');
+		if (c >= markings.length) {
+			--c;
+		}
+		markings.eq(c).click();
+	}
+}
+
+function markingAccept(ev) {
+	if (!cmarking) {
+		return false;
+	}
+
+	let rpl = '';
+	let types = cmarking.attr('data-types');
+	let click = {'accept': types, 'w': cmarking.text()};
+	if (types.indexOf('@nil') !== -1) {
+		rpl = '';
+	}
+	else if (types.indexOf('@insert') !== -1) {
+		rpl = cmarking.text();
+	}
+	else {
+		rpl = $(this).text();
+		click.r = rpl;
+	}
+
+	ga_log('marking', 'accept', cmarking.attr('data-types'));
+	log_click(click);
+	markingDo(rpl);
+
+	return false;
+}
+
+function markingDiscard(ev) {
+	ga_log('marking', 'discard', cmarking.attr('data-types'));
+	log_click({'discard': cmarking.attr('data-types'), 'w': cmarking.text()});
+
+	let types = cmarking.attr('data-types');
+	if (types.indexOf('@insert') !== -1) {
+		markingDo('');
+	}
+	else {
+		markingDo(cmarking.text());
+	}
+	return false;
+}
+
+function markingYellow() {
+	let click = {'yellow': cmarking.attr('data-types'), 'w': cmarking.text()};
+	if (cmarking.attr('data-sugs')) {
+		let s = cmarking.attr('data-sugs').split('\t')[0];
+		if (s === cmarking.text() || s.toUpperCase() === cmarking.text().toUpperCase()) {
+			click.r = s;
+			markingDo(s);
+		}
+	}
+	else {
+		markingDo(cmarking.text());
+	}
+	ga_log('marking', 'yellow', cmarking.attr('data-types'));
+	log_click(click);
+}
+
 function parseResult(rv) {
 	if (!rv.hasOwnProperty('c')) {
 		$.featherlight.close();
@@ -241,10 +359,10 @@ function parseResult(rv) {
 		return;
 	}
 
-	const popup = $.featherlight.current().$content.get(0);
-	if (popup.hasAttribute('src')) {
-		popup.removeAttribute('src');
-		popup.srcdoc = '<!DOCTYPE html><html><head><meta charset="UTF-8"><link href="chrome-extension://'+chrome.i18n.getMessage('@@extension_id')+'/vendor/bootstrap.min.css" rel="stylesheet" type="text/css"><link href="chrome-extension://'+chrome.i18n.getMessage('@@extension_id')+'/css/inline.css" rel="stylesheet" type="text/css"></head><body><div id="result"></div></body></html>';
+	floater = $.featherlight.current().$content.get(0);
+	if (floater.hasAttribute('src')) {
+		floater.removeAttribute('src');
+		floater.srcdoc = '<!DOCTYPE html><html><head><meta charset="UTF-8"><link href="chrome-extension://'+chrome.i18n.getMessage('@@extension_id')+'/vendor/bootstrap.min.css" rel="stylesheet" type="text/css"><link href="chrome-extension://'+chrome.i18n.getMessage('@@extension_id')+'/css/inline.css" rel="stylesheet" type="text/css"></head><body><div id="result"></div></body></html>';
 	}
 
 	let rs = '';
@@ -396,11 +514,11 @@ function parseResult(rv) {
 	}
 
 	setTimeout(() => {
-		var doc = popup.contentWindow.document;
-		doc.getElementById('result').innerHTML += rs;
-		$(doc).find('span.marking').off().click(markingClick);
+		floater_doc = floater.contentWindow.document;
+		floater_doc.getElementById('result').innerHTML += rs;
+		$(floater_doc).find('span.marking').off().click(markingClick);
+		console.log([floater, floater_doc, rv, rs]);
 	}, 100);
-	console.log([popup, rv, rs]);
 }
 
 /* exported checkActiveElement */
@@ -415,8 +533,8 @@ function checkActiveElement() {
 		console.log(g_conf);
 	});
 
-	let e = getTextOrElement();
-	console.log(e);
+	context = getTextOrElement();
+	console.log(context);
 	//return;
 
 	$.featherlight({
@@ -430,7 +548,7 @@ function checkActiveElement() {
 		namespace: 'gt-popup',
 	});
 
-	let t = '<s1>\n' + (e.t ? e.t : e.e.textContent) + '\n</s1>';
+	let t = '<s1>\n' + (context.t ? context.t : context.e.textContent) + '\n</s1>';
 
 	$.post('https://retmig.dk/callback.php?a=danproof', {t}).done(parseResult).fail(() => {
 		$.featherlight.close();

@@ -6,6 +6,8 @@
 	"dependencies": {
 		"dompurify": "^1.0.2",
 		"featherlight": "^1.7.9",
-		"jquery": "^3.2.1"
+		"jquery": "^3.2.1",
+		"popper.js": "^1.11.1",
+		"bootstrap": "^4.0.0-beta"
 	}
 }

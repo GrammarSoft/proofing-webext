@@ -28,19 +28,23 @@
 	},
 	"web_accessible_resources": [
 		"css/*",
-		"js/*"
+		"js/*",
+		"vendor/*"
 	],
 	"content_scripts": [
 		{
 			"matches": ["http://*/*", "https://*/*", "file:///*"],
 			"css": [
-				"vendor/featherlight/featherlight.css"
+				"vendor/featherlight.min.css",
+				"css/featherlight.css"
 			],
 			"js": [
 				"vendor/purify.min.js",
 				"vendor/jquery.min.js",
-				"vendor/featherlight/featherlight.min.js",
-				"js/error_types.js",
+				"vendor/featherlight.min.js",
+				"vendor/popper.min.js",
+				"vendor/bootstrap.min.js",
+				"js/mark_types.js",
 				"js/shared.js",
 				"js/contentscript.js"
 			]

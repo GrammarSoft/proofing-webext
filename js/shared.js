@@ -64,6 +64,61 @@ let g_conf_defaults = {
 	opt_colorBlind: false,
 };
 
+/* exported ga_log */
+function ga_log(cat, act, lbl) {
+	console.log([cat, act, lbl]);
+	return;
+	if (!ga || typeof ga === 'undefined') {
+		return;
+	}
+	ga('send', 'event', cat, act, lbl);
+}
+
+/* exported send_post */
+function send_post(url, data) {
+	if (typeof data === 'undefined' || !data) {
+		data = {};
+	}
+	return $.ajax({
+		url: url,
+		type: 'POST',
+		dataType: 'json',
+		headers: {HMAC: cookie_hmac['sess_id']},
+		data: data,
+	});
+}
+
+/* exported log_click */
+function log_click(data) {
+	console.log(data);
+	return;
+	$.post('./callback.php?a=click', {'data': JSON.stringify(data)});
+}
+
+/* exported log_error */
+function log_error(data) {
+	console.log(data);
+	return;
+	$.post('./callback.php?a=error', {'data': JSON.stringify(data)});
+}
+
+/* exported log_warning */
+function log_warning(data) {
+	console.log(data);
+	return;
+	$.post('./callback.php?a=warning', {'data': JSON.stringify(data)});
+}
+
+/* exported is_upper */
+function is_upper(ch) {
+	return (ch === ch.toUpperCase() && ch !== ch.toLowerCase());
+}
+
+/* exported uc_first */
+function uc_first(str) {
+	return str.substr(0, 1).toUpperCase() + str.substr(1);
+}
+
 /* exported escHTML */
 function escHTML(t) {
 	let nt = t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');

@@ -8,12 +8,13 @@
 /* globals getCommonParent */
 /* globals escHTML */
 /* globals sanitize_result */
-/* globals error_types */
+/* globals marking_types */
 /* globals types_red */
 /* globals types_yellow */
 /* globals g_conf_defaults */
 
 let g_conf = Object.assign({}, g_conf_defaults);
+let cmarking = null;
 
 function getTextOrElement() {
 	let rv = {e: null, t: null};
@@ -74,9 +75,105 @@ function isInDictionary(e) {
 	return false;
 }
 
-function createError(error) {
+function markingPopup(c, exp) {
+	var p = $(c).closest('body');
+	p.find('span.marking').popover('dispose').removeClass('marking-selected');
+	p.find('.popover').remove();
+
+	// If this marking's popup is the open one, just close it
+	if (!exp && cmarking && cmarking.get(0) === c) {
+		cmarking = null;
+		return;
+	}
+	cmarking = $(c);
+	cmarking.focus().addClass('marking-selected');
+	//console.log([c.offset(), c.width(), p.width()]);
+
+	var all_upper = is_upper(cmarking.text());
+	var first_upper = all_upper || is_upper(cmarking.text().charAt(0));
+
+	var types = cmarking.attr('data-types');
+	if (types.indexOf('@lower') !== -1) {
+		all_upper = first_upper = false;
+	}
+
+	var html = '<div id="popup">';
+	var crs = cmarking.attr('data-sugs').split('\t');
+	for (var c=0 ; c<crs.length ; ++c) {
+		if (crs[c].length === 0) {
+			continue;
+		}
+		var txt = crs[c];
+		if (all_upper) {
+			txt = txt.toUpperCase();
+		}
+		else if (first_upper) {
+			txt = uc_first(txt);
+		}
+		html += '<div class="action"><a onclick="window.parent.markingAccept(this);"><span class="icon icon-accept"></span><span>'+escHTML(txt)+'</span></a></div>';
+	}
+	if (types.indexOf('@nil') !== -1) {
+		html += '<div class="action"><a onclick="window.parent.markingAccept();"><span class="icon icon-discard"></span><span>Fjern ordet</span></a></div>';
+	}
+	if (types.indexOf('@insert') !== -1) {
+		html += '<div class="action"><a onclick="window.parent.markingAccept();"><span class="icon icon-accept"></span><span>Indsæt ordet</span></a></div>';
+	}
+	if (cmarking.hasClass('marking-yellow')) {
+		html += '<div class="action"><a onclick="window.parent.addToDictionary();"><span class="icon icon-accept"></span><span>Tilføj til ordbogen</span></a></div>';
+	}
+	if (types.indexOf('@question') !== -1) {
+		html += '<div class="action"><a onclick="window.parent.markingDiscard();"><span class="icon icon-accept"></span><span>Ok</span></a></div>';
+	}
+	else {
+		html += '<div class="action"><a onclick="window.parent.showInput();"><span class="icon icon-accept"></span><span>Ret selv…</span></a></div>';
+		html += '<div class="action"><a onclick="window.parent.markingDiscard();"><span class="icon icon-discard"></span><span>Ignorer</span></a></div>';
+	}
+	html += '</div>';
+	html += '<div id="explanation">';
+	var ts = cmarking.attr('data-types').split(/ /g);
+	var exps = {};
+	var en = exp ? 2 : 1;
+	for (var i=0 ; i<ts.length ; ++i) {
+		var et = marking_types[ts[i]] ? marking_types[ts[i]][en] : (ts[i] + ' ');
+		et = '<p>'+et.replace(/(<\/h\d>)/g, '$1<br><br>').replace(/(<br>\s*)+<br>\s*/g, '</p><p>')+'</p>';
+		exps[et] = et.replace(/<p>\s*<\/p>/g, '');
+	}
+	html += $.map(exps, function(v) { return v; }).join('<hr>');
+	if (!exp) {
+		html += '<hr><div class="action"><a onclick="window.parent.markingExplain();"><span class="icon icon-explain"></span><span>Udvid forklaringen</span></a></div>';
+	}
+	html += '</div>';
+
+	cmarking.popover({
+		animation: false,
+		container: p,
+		content: html,
+		html: true,
+		placement: 'bottom',
+	}).on('shown.bs.popover', function() {
+		var pop = p.find('div.popover');
+		//pop.scrollintoview();
+		pop.find('a[target="_blank"]').off().on('click', function() {
+			window.open($(this).attr('href'));
+		});
+	});
+	cmarking.popover('show');
+}
+
+function markingClick() {
+	markingPopup(this, false);
+	ga_log('marking', 'click');
+}
+
+function markingExplain() {
+	markingPopup(cmarking.get(0), true);
+	ga_log('marking', 'explain', cmarking.attr('data-types'));
+	log_click({'explain': cmarking.attr('data-types')});
+}
+
+function createMarking(marking) {
 	let col = 'green';
-	let types = error[1].split(/ /g);
+	let types = marking[1].split(/ /g);
 	for (let i=0 ; i<types.length ; ++i) {
 		if (types_yellow.hasOwnProperty(types[i])) {
 			col = 'yellow';
@@ -92,13 +189,13 @@ function createError(error) {
 		}
 	}
 
-	if (g_conf.opt_useDictionary && col === 'yellow' && isInDictionary(error[0])) {
-		if (error[2].length == 0) {
-			console.log(['yellow-discard', error[0]]);
+	if (g_conf.opt_useDictionary && col === 'yellow' && isInDictionary(marking[0])) {
+		if (marking[2].length == 0) {
+			console.log(['yellow-discard', marking[0]]);
 			return;
 		}
 
-		console.log(['yellow-green', error[0]]);
+		console.log(['yellow-green', marking[0]]);
 		col = 'green';
 	}
 
@@ -107,25 +204,21 @@ function createError(error) {
 	}
 
 	let space = 0;
-	if (!error[2] && /@-?comp(-|\t|$)/.test(error[1])) {
-		error[2] = error[0];
+	if (!marking[2] && /@-?comp(-|\t|$)/.test(marking[1])) {
+		marking[2] = marking[0];
 	}
 	if ($.inArray('@comp-', types) !== -1) {
-		error[0] += ' ';
+		marking[0] += ' ';
 		space = 1;
 	}
 	else if ($.inArray('@-comp', types) !== -1) {
-		error[0] = ' ' + error[0];
+		marking[0] = ' ' + marking[0];
 		space = -1;
 	}
 	else if ($.inArray('@comp-:-', types) !== -1) {
-		error[0] += ' ';
-		error[2] = error[2].replace(/(\t|$)/g, '‐$1'); // -$1 puts after words because matching \t|$
+		marking[0] += ' ';
+		marking[2] = marking[2].replace(/(\t|$)/g, '‐$1'); // -$1 puts after words because matching \t|$
 		space = 1;
-	}
-
-	if ($.inArray('@-comp', types) === -1 && $.inArray('@insert', types) === -1) {
-		error[0] = $.trim(error[0]);
 	}
 
 	let alt = '';
@@ -133,7 +226,7 @@ function createError(error) {
 		alt = ' alt';
 	}
 
-	let html = '<span class="error error-'+col+alt+'" data-types="'+escHTML(error[1])+'" data-sugs="'+escHTML(error[2])+'">'+escHTML(error[0])+'</span>';
+	let html = '<span class="marking marking-'+col+alt+'" data-types="'+escHTML(marking[1])+'" data-sugs="'+escHTML(marking[2])+'">'+escHTML(marking[0])+'</span>';
 	if (space === 0) {
 		html = ' '+html;
 	}
@@ -151,7 +244,7 @@ function parseResult(rv) {
 	const popup = $.featherlight.current().$content.get(0);
 	if (popup.hasAttribute('src')) {
 		popup.removeAttribute('src');
-		popup.srcdoc = '<!DOCTYPE html><html><head><meta charset="UTF-8"><link href="chrome-extension://'+chrome.i18n.getMessage('@@extension_id')+'/css/inline.css" rel="stylesheet" type="text/css"></head><body><div id="result"></div></body></html>';
+		popup.srcdoc = '<!DOCTYPE html><html><head><meta charset="UTF-8"><link href="chrome-extension://'+chrome.i18n.getMessage('@@extension_id')+'/vendor/bootstrap.min.css" rel="stylesheet" type="text/css"><link href="chrome-extension://'+chrome.i18n.getMessage('@@extension_id')+'/css/inline.css" rel="stylesheet" type="text/css"></head><body><div id="result"></div></body></html>';
 	}
 
 	let rs = '';
@@ -183,7 +276,7 @@ function parseResult(rv) {
 			}
 
 			if (w.length > 1) {
-				// Strip error types belonging to higher than current critique level
+				// Strip marking types belonging to higher than current critique level
 				let ws = w[1].split(/ /g);
 				let nws = [];
 				let crs = [];
@@ -210,12 +303,12 @@ function parseResult(rv) {
 						crs.push(n);
 						continue;
 					}
-					if (error_types.hasOwnProperty(ws[k])) {
+					if (marking_types.hasOwnProperty(ws[k])) {
 						nws.push(ws[k]);
 					}
 					else {
-						console.log('Unknown error: '+ws[k]);
-						nws.push('@unknown-error');
+						console.log('Unknown marking: '+ws[k]);
+						nws.push('@unknown-marking');
 					}
 				}
 				// Remove @sentsplit from last token
@@ -287,7 +380,7 @@ function parseResult(rv) {
 			}
 
 			if (w.length > 1) {
-				let rv = createError(w);
+				let rv = createMarking(w);
 				rs += rv.html;
 				space = rv.space;
 			}
@@ -303,7 +396,9 @@ function parseResult(rv) {
 	}
 
 	setTimeout(() => {
-		popup.contentWindow.document.getElementById('result').innerHTML += rs;
+		var doc = popup.contentWindow.document;
+		doc.getElementById('result').innerHTML += rs;
+		$(doc).find('span.marking').off().click(markingClick);
 	}, 100);
 	console.log([popup, rv, rs]);
 }

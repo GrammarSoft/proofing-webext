@@ -5,8 +5,6 @@
  * Frontend by Tino Didriksen <mail@tinodidriksen.com>
  */
 
-@import url('https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css');
-
 html, body {
 	padding: 5px;
 }
@@ -21,8 +19,10 @@ a {
 
 .popover {
 	max-width: 350px;
+	box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.3);
 }
 /* Move popover further away and embiggen the arrow */
+/*
 .popover.bottom {
 	margin-top: 30px;
 }
@@ -49,6 +49,7 @@ a {
 .popover.top > .arrow:after {
 	margin-left: -20px;
 }
+*/
 
 #popup {
 	white-space: nowrap;
@@ -63,11 +64,6 @@ a {
 #popup a * {
 	line-height: 20px;
 	vertical-align: middle;
-}
-.tts {
-	position: absolute;
-	right: 0px;
-	top: 3px;
 }
 
 #explanation {
@@ -102,23 +98,23 @@ a:hover .icon-explain {
 	background: url('explanation_dark_0020.png');
 }
 .icon-accept {
-	background: url('insert_error_light_0020.png');
+	background: url('insert_marking_light_0020.png');
 }
 a:hover .icon-accept {
-	background: url('insert_error_dark_0020.png');
+	background: url('insert_marking_dark_0020.png');
 }
 .icon-discard {
-	background: url('remove_error_light_0020.png');
+	background: url('remove_marking_light_0020.png');
 }
 a:hover .icon-discard {
-	background: url('remove_error_dark_0020.png');
+	background: url('remove_marking_dark_0020.png');
 }
 a:hover .icon, .icon {
 	background-repeat: no-repeat;
 	background-size: 20px;
 }
 
-.error {
+.marking {
 	cursor: pointer !important;
 	display: inline-block;
 	padding-left: 3px;
@@ -127,28 +123,28 @@ a:hover .icon, .icon {
 	margin-right: 1px;
 	font-weight: 900;
 }
-.error-red {
+.marking-red {
 	color: #c12e2a;
 	border: 1px dashed #c12e2a;
 }
-.error-red.alt:after {
+.marking-red.alt:after {
 	content: " ✗";
 }
-.error-yellow {
+.marking-yellow {
 	color: #eb9316;
 	border: 1px dashed #eb9316;
 }
-.error-yellow.alt:after {
+.marking-yellow.alt:after {
 	content: " ?";
 }
-.error-green {
+.marking-green {
 	color: #419641;
 	border: 1px dashed #419641;
 }
-.error-green.alt:after {
+.marking-green.alt:after {
 	content: " ✓";
 }
-.error-selected {
+.marking-selected {
 	padding-left: 2px;
 	padding-right: 2px;
 	border-width: 2px;
@@ -165,16 +161,16 @@ a:hover .icon, .icon {
 		background-image: url('explanation_dark_0060.png');
 	}
 	.icon-accept {
-		background-image: url('insert_error_light_0060.png');
+		background-image: url('insert_marking_light_0060.png');
 	}
 	a:hover .icon-accept {
-		background-image: url('insert_error_dark_0060.png');
+		background-image: url('insert_marking_dark_0060.png');
 	}
 	.icon-discard {
-		background-image: url('remove_error_light_0060.png');
+		background-image: url('remove_marking_light_0060.png');
 	}
 	a:hover .icon-discard {
-		background-image: url('remove_error_dark_0060.png');
+		background-image: url('remove_marking_dark_0060.png');
 	}
 	a:hover .icon, .icon {
 		background-repeat: no-repeat;

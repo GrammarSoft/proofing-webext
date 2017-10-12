@@ -29,8 +29,8 @@ let types_yellow = {
 	"@check!": "@check!",
 };
 
-/* exported error_types */
-let error_types = {
+/* exported marking_types */
+let marking_types = {
 	"@x-etype-list": [
 		"@x-etype-list",
 		"Stavefejl fundet ved listeopslag",

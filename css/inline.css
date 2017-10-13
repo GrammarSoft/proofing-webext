@@ -92,22 +92,22 @@ a {
 	margin-right: 1ex;
 }
 .icon-explain {
-	background: url('explanation_light_0020.png');
+	background: url('../images/explanation_light_0020.png');
 }
 a:hover .icon-explain {
-	background: url('explanation_dark_0020.png');
+	background: url('../images/explanation_dark_0020.png');
 }
 .icon-accept {
-	background: url('insert_marking_light_0020.png');
+	background: url('../images/insert_marking_light_0020.png');
 }
 a:hover .icon-accept {
-	background: url('insert_marking_dark_0020.png');
+	background: url('../images/insert_marking_dark_0020.png');
 }
 .icon-discard {
-	background: url('remove_marking_light_0020.png');
+	background: url('../images/remove_marking_light_0020.png');
 }
 a:hover .icon-discard {
-	background: url('remove_marking_dark_0020.png');
+	background: url('../images/remove_marking_dark_0020.png');
 }
 a:hover .icon, .icon {
 	background-repeat: no-repeat;
@@ -122,32 +122,30 @@ a:hover .icon, .icon {
 	margin-left: 1px;
 	margin-right: 1px;
 	font-weight: 900;
+	border-radius: 3px;
 }
 .marking-red {
 	color: #c12e2a;
-	border: 1px dashed #c12e2a;
+	border: 1px dotted #c12e2a;
 }
 .marking-red.alt:after {
 	content: " ✗";
 }
 .marking-yellow {
 	color: #eb9316;
-	border: 1px dashed #eb9316;
+	border: 1px dotted #eb9316;
 }
 .marking-yellow.alt:after {
 	content: " ?";
 }
 .marking-green {
 	color: #419641;
-	border: 1px dashed #419641;
+	border: 1px dotted #419641;
 }
 .marking-green.alt:after {
 	content: " ✓";
 }
 .marking-selected {
-	padding-left: 2px;
-	padding-right: 2px;
-	border-width: 2px;
 	border-style: solid;
 }
 
@@ -155,22 +153,22 @@ a:hover .icon, .icon {
   only screen and (-o-min-device-pixel-ratio: 13/10),
   only screen and (min-resolution: 120dpi) {
 	.icon-explain {
-		background-image: url('explanation_light_0060.png');
+		background-image: url('../images/explanation_light_0060.png');
 	}
 	a:hover .icon-explain {
-		background-image: url('explanation_dark_0060.png');
+		background-image: url('../images/explanation_dark_0060.png');
 	}
 	.icon-accept {
-		background-image: url('insert_marking_light_0060.png');
+		background-image: url('../images/insert_marking_light_0060.png');
 	}
 	a:hover .icon-accept {
-		background-image: url('insert_marking_dark_0060.png');
+		background-image: url('../images/insert_marking_dark_0060.png');
 	}
 	.icon-discard {
-		background-image: url('remove_marking_light_0060.png');
+		background-image: url('../images/remove_marking_light_0060.png');
 	}
 	a:hover .icon-discard {
-		background-image: url('remove_marking_dark_0060.png');
+		background-image: url('../images/remove_marking_dark_0060.png');
 	}
 	a:hover .icon, .icon {
 		background-repeat: no-repeat;

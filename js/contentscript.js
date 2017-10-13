@@ -5,74 +5,35 @@
  * Frontend by Tino Didriksen <mail@tinodidriksen.com>
  */
 'use strict';
-/* globals getCommonParent */
+/* globals Defs */
+/* globals decHTML */
 /* globals escHTML */
-/* globals sanitize_result */
+/* globals findTextNodes */
+/* globals g_conf_defaults */
+/* globals ga_log */
+/* globals getCommonParent */
+/* globals getNontextParent */
+/* globals is_upper */
+/* globals itjq */
+/* globals log_click */
 /* globals marking_types */
+/* globals sanitize_result */
+/* globals text_nodes */
+/* globals tnjq */
 /* globals types_red */
 /* globals types_yellow */
-/* globals g_conf_defaults */
+/* globals uc_first */
 
 let g_conf = Object.assign({}, g_conf_defaults);
 let context = null;
 let cmarking = null;
 let floater = null;
 let floater_doc = null;
-
-function getTextOrElement() {
-	let rv = {e: null, t: null};
-	let s = window.getSelection();
-	let e = document.activeElement;
-	let w = window;
-
-	if (e && e.tagName !== 'BODY') {
-		if (e.tagName === 'IFRAME' && e.contentWindow) {
-			w = e.contentWindow;
-			if (w.document.activeElement) {
-				e = w.document.activeElement;
-			}
-			if (w.document.getSelection() && w.document.getSelection().toString() !== '') {
-				s = w.document.getSelection();
-			}
-		}
-
-		rv.e = e;
-
-		if (e.tagName === 'INPUT' || e.tagName === 'TEXTAREA') {
-			// If there is a partial selection, return that instead
-			if (e.selectionStart !== e.selectionEnd && (e.selectionStart !== 0 || e.selectionEnd !== e.value.length)) {
-				rv.t = e.value.substring(e.selectionStart, e.selectionEnd);
-			}
-			return rv;
-		}
-	}
-
-	if (s && s.toString() !== '') {
-		console.log(s);
-
-		let sel = [s.focusNode, s.anchorNode];
-		if (s.focusNode.compareDocumentPosition(s.anchorNode) & (Node.DOCUMENT_POSITION_FOLLOWING|Node.DOCUMENT_POSITION_CONTAINED_BY)) {
-			console.log('Swapping selection nodes');
-			sel = [s.anchorNode, s.focusNode];
-		}
-		rv.e = sel[0];
-
-		while (rv.e.nodeType === Node.TEXT_NODE) {
-			rv.e = rv.e.parentNode;
-		}
-
-		// If all text in the node is selected, return the node instead
-		let cp = getCommonParent(s.anchorNode, s.focusNode);
-		if (cp && $.trim(cp.textContent) === $.trim(s.toString())) {
-			rv.e = cp;
-		}
-		else {
-			rv.t = s.toString();
-		}
-	}
-
-	return rv;
-}
+let to_send = null;
+let to_send_i = 0;
+let ts_xhr = null;
+let ts_slow = null;
+let ts_fail = 0;
 
 function isInDictionary(e) {
 	return false;
@@ -89,8 +50,7 @@ function addToDictionary() {
 		}
 	}
 
-	let p = $(floater);
-	let cs = p.find('span.marking-yellow').each(function() {
+	$(floater_doc).find('span.marking-yellow').each(function() {
 		cmarking = $(this);
 		if (cmarking.text() !== word && cmarking.text().toUpperCase() !== word.toUpperCase()) {
 			return;
@@ -164,9 +124,11 @@ function markingPopup(c, exp) {
 		et = '<p>'+et.replace(/(<\/h\d>)/g, '$1<br><br>').replace(/(<br>\s*)+<br>\s*/g, '</p><p>')+'</p>';
 		exps[et] = et.replace(/<p>\s*<\/p>/g, '');
 	}
-	html += $.map(exps, function(v) { return v; }).join('<hr>');
+	html += $.map(exps, function(v) {
+		return v;
+	}).join('<hr>');
 	if (!exp) {
-		html += '<hr><div class="action"><a onclick="window.parent.markingExplain();"><span class="icon icon-explain"></span><span>Udvid forklaringen</span></a></div>';
+		html += '<hr><div class="action"><a href="#" class="explain"><span class="icon icon-explain"></span><span>Udvid forklaringen</span></a></div>';
 	}
 	html += '</div>';
 
@@ -176,16 +138,19 @@ function markingPopup(c, exp) {
 		content: html,
 		html: true,
 		placement: 'bottom',
-	}).on('shown.bs.popover', function() {
+	}).on('shown.bs.popover', () => {
 		let pop = p.find('div.popover');
 		//pop.scrollintoview();
 		pop.find('a[target="_blank"]').off().on('click', function() {
 			window.open($(this).attr('href'));
+			return false;
 		});
 		pop.find('a.accept').off().on('click', markingAccept);
 		pop.find('a.discard').off().on('click', markingDiscard);
+		pop.find('a.explain').off().on('click', markingExplain);
 		pop.find('a.dict').off().on('click', addToDictionary);
-		//pop.find('a.input').off().on('click', showInput);
+		pop.find('a.input').off().on('click', markingInput);
+		pop.focus();
 	});
 	cmarking.popover('show');
 }
@@ -193,12 +158,74 @@ function markingPopup(c, exp) {
 function markingClick() {
 	markingPopup(this, false);
 	ga_log('marking', 'click');
+
+	return false;
+}
+
+function markingInputOne() {
+	let txt = $(this).closest('div.popover').find('#input').val();
+	ga_log('marking', 'input-one', txt);
+	log_click({'input': cmarking.attr('data-types'), 'w': cmarking.text(), 'r': txt});
+	markingDo(txt);
+}
+
+function markingInputAll() {
+	let p = $(this).closest('body');
+	let cm = cmarking;
+	let word = cm.text();
+	let types = cm.attr('data-types');
+	let txt = p.find('div.popover').find('#input').val();
+
+	$(floater_doc).find('span.marking').each(function() {
+		cmarking = $(this);
+		if (cmarking.get(0) == cm.get(0) || cmarking.text() !== word || cmarking.attr('data-types') !== types) {
+			return;
+		}
+		markingDo(txt);
+	});
+
+	cmarking = cm;
+	ga_log('marking', 'input-all', txt);
+	log_click({'input': cmarking.attr('data-types'), 'w': cmarking.text(), 'r': txt});
+	markingDo(txt);
+}
+
+function markingInput() {
+	let p = $(this).closest('body');
+	p.find('span.marking').popover('dispose').removeClass('marking-selected');
+	p.find('.popover').remove();
+
+	let html = '<div class="form-group"><label for="input">Ret selv ordet:</label><input class="form-control" id="input" type="text" value=""><br></div><button class="btn btn-light" id="close">Luk</button> <button class="btn btn-light" id="one">Ret</button> <button class="btn btn-light" id="all">Ret alle</button>';
+
+	cmarking.popover({
+		animation: false,
+		container: p,
+		content: html,
+		html: true,
+		placement: 'bottom',
+	}).on('shown.bs.popover', () => {
+		let pop = p.find('div.popover');
+		//pop.scrollintoview();
+		pop.find('#close').off().on('click', () => {
+			p.find('span.marking').popover('dispose').removeClass('marking-selected');
+			p.find('.popover').remove();
+			cmarking = null;
+		});
+		pop.find('#one').off().on('click', markingInputOne);
+		pop.find('#all').off().on('click', markingInputAll);
+		pop.find('#input').val(cmarking.text()).focus();
+	});
+	cmarking.popover('show');
+
+	return false;
 }
 
 function markingExplain() {
 	markingPopup(cmarking.get(0), true);
 	ga_log('marking', 'explain', cmarking.attr('data-types'));
 	log_click({'explain': cmarking.attr('data-types')});
+
+	return false;
 }
 
 function createMarking(marking) {
@@ -269,26 +296,27 @@ function markingDo(rpl) {
 	let markings = p.find('span.marking');
 	markings.popover('dispose');
 	p.find('.popover').remove();
-	$('#dg_input').modal('hide');
 	if (!cmarking) {
 		return;
 	}
 
+	// Wrap around to 0 if not found
 	let c = 0;
 	for (let i=0 ; i<markings.length ; ++i) {
 		if (markings[i] === cmarking.get(0)) {
 			c = i;
+			break;
 		}
 	}
 
 	cmarking.replaceWith(rpl);
 	cmarking = null;
 
-	if (p.find('span.marking').length == 0) {
+	markings = p.find('span.marking');
+	if (markings.length == 0) {
 		$('#btn-correct-all,#btn-wrong-all,#btn-close').addClass('disabled');
 	}
 	else {
-		markings = p.find('span.marking');
 		if (c >= markings.length) {
 			--c;
 		}
@@ -333,6 +361,7 @@ function markingDiscard(ev) {
 	else {
 		markingDo(cmarking.text());
 	}
+
 	return false;
 }
 
@@ -352,7 +381,7 @@ function markingYellow() {
 	log_click(click);
 }
 
-function parseResult(rv) {
+function _parseResult(rv) {
 	if (!rv.hasOwnProperty('c')) {
 		$.featherlight.close();
 		console.log(rv);
@@ -517,8 +546,222 @@ function parseResult(rv) {
 		floater_doc = floater.contentWindow.document;
 		floater_doc.getElementById('result').innerHTML += rs;
 		$(floater_doc).find('span.marking').off().click(markingClick);
+		sendTexts();
 		console.log([floater, floater_doc, rv, rs]);
 	}, 100);
+}
+
+function parseResult(rv) {
+	try {
+		_parseResult(rv);
+	}
+	catch (e) {
+		console.log(e);
+	}
+}
+
+function sendTexts() {
+	if (to_send_i < to_send.length) {
+		let text = to_send[to_send_i];
+		++to_send_i;
+		if ($.trim(text).length === 0) {
+			console.log('Empty text '+to_send_i);
+			return sendTexts();
+		}
+		//console.log(text.length);
+		let data = {
+			t: text,
+			r: ts_fail,
+		};
+		ts_xhr = $.post('https://retmig.dk/callback.php?a=danproof', data).done(parseResult).fail(() => {
+			$.featherlight.close();
+			console.log(this);
+			alert('Kunne ikke gennemføre checkning af grammatik - er du sikker på at du har adgang til dette værktøj?');
+		});
+	}
+	// ToDo: Show popup if no errors were found
+}
+
+function cleanContext() {
+	let b = $(context.e).closest('body');
+	b.find('[data-gtid]').removeAttr('data-gtid');
+	b.find('div.gt-unwrap').each(function () {
+		let nt = false;
+		for (let i=0 ; i<this.childNodes.length ; ++i) {
+			if (this.childNodes[i].nodeType !== Node.TEXT_NODE) {
+				nt = true;
+				break;
+			}
+		}
+		if (!nt) {
+			this.normalize();
+			this.parentNode.replaceChild(this.firstChild, this);
+		}
+		else {
+			$(this).children().unwrap();
+		}
+	});
+}
+
+function prepareTexts() {
+	cleanContext();
+
+	let to_send = [];
+
+	let t = null;
+	if (context.t) {
+		t = context.t;
+	}
+	if (context.e.tagName === 'INPUT' || context.e.tagName === 'TEXTAREA') {
+		t = context.e.value;
+	}
+	if (t) {
+		let vals = t.replace(/\r\n/g, '\n').replace(/\r+/g, '\n').split(/\n\n+/g);
+		let text = '';
+		for (let i=0 ; i<vals.length ; ++i) {
+			let id = i+1;
+			text += '<s'+id+'>\n' + vals[i] + '\n</s'+id+'>\n\n';
+			if (text.length >= Defs.MAX_RQ_SIZE) {
+				to_send.push(text);
+				text = '';
+			}
+		}
+		to_send.push(text);
+		return to_send;
+	}
+
+	let nodes = $(findTextNodes(context.e)).closest(tnjq).get();
+	console.log(nodes);
+	for (let i=0 ; i<nodes.length ; ++i) {
+		let need = false;
+		let run = [];
+		let wrap = false;
+		for (let j=0 ; j<nodes[i].childNodes.length ; ++j) {
+			if (text_nodes.hasOwnProperty(nodes[i].childNodes[j].nodeName)) {
+				if (run.length && wrap) {
+					//console.log(run);
+					$(run).wrapAll('<div class="gt-unwrap"></div>');
+				}
+				need = true;
+				run = [];
+				wrap = false;
+				continue;
+			}
+			if (nodes[i].childNodes[j].nodeType === Node.ELEMENT_NODE || (nodes[i].childNodes[j].nodeType === Node.TEXT_NODE && /\S/.test(nodes[i].childNodes[j].nodeValue))) {
+				//console.log(nodes[i].childNodes[j]);
+				wrap = true;
+			}
+			run.push(nodes[i].childNodes[j]);
+		}
+		if (run.length && need && wrap) {
+			//console.log(run);
+			$(run).wrapAll('<div class="gt-unwrap"></div>');
+		}
+	}
+
+	let ps = $(findTextNodes(context.e)).closest(tnjq).get();
+	console.log(ps);
+	let text = '';
+	for (let i=0 ; i<ps.length ; ++i) {
+		let p = $(ps[i]);
+		let ptxt = p.clone();
+		let nt = 0;
+		let did = true;
+		for (let j=0 ; j<100 && did ; ++j) {
+			did = false;
+			ptxt.find(itjq).each(function() {
+				let t = $(this);
+				let nn = this.nodeName.toLowerCase();
+				if ($.trim(t.text())) {
+					++nt;
+					t.replaceWith('[STYLE:'+nn+':'+nt+']'+t.html()+'[/STYLE:'+nn+':'+nt+']');
+				}
+				else {
+					t.remove();
+				}
+				did = true;
+			});
+		}
+		ptxt = $.trim(ptxt.html().replace(/<br\/?\s*>/g, '\n').replace(/<[^>]+>/g, '').replace(/\[(STYLE:\w+:\w+)\]/g, '<$1>').replace(/\[(\/STYLE:\w+:\w+)\]/g, '<$1>'));
+		if (!ptxt) {
+			continue;
+		}
+		let id = i+1;
+		p.attr('data-gtid', 's'+id);
+		text += '<s' + id + '>\n' + decHTML(ptxt) + '\n</s' + id + '>\n\n';
+
+		if (text.length >= Defs.MAX_RQ_SIZE) {
+			to_send.push(text);
+			text = '';
+		}
+	}
+	to_send.push(text);
+
+	return to_send;
+}
+
+function getTextOrElement() {
+	let rv = {e: null, t: null};
+	let s = window.getSelection();
+	let e = document.activeElement;
+	let w = window;
+
+	if (e && e.tagName !== 'BODY') {
+		if (e.tagName === 'IFRAME' && e.contentWindow) {
+			w = e.contentWindow;
+			if (w.document.activeElement) {
+				e = w.document.activeElement;
+			}
+			if (w.document.getSelection() && w.document.getSelection().toString() !== '') {
+				s = w.document.getSelection();
+			}
+		}
+
+		rv.e = e;
+
+		if (e.tagName === 'INPUT' || e.tagName === 'TEXTAREA') {
+			// If there is a partial selection, return that instead
+			if (e.selectionStart !== e.selectionEnd && (e.selectionStart !== 0 || e.selectionEnd !== e.value.length)) {
+				rv.t = e.value.substring(e.selectionStart, e.selectionEnd);
+			}
+			return rv;
+		}
+	}
+
+	if (s && s.toString() !== '') {
+		console.log(s);
+
+		let sel = [s.focusNode, s.anchorNode];
+		if (s.focusNode.compareDocumentPosition(s.anchorNode) & (Node.DOCUMENT_POSITION_FOLLOWING|Node.DOCUMENT_POSITION_CONTAINED_BY)) {
+			console.log('Swapping selection nodes');
+			sel = [s.anchorNode, s.focusNode];
+		}
+		rv.e = sel[0];
+
+		while (rv.e.nodeType === Node.TEXT_NODE) {
+			rv.e = rv.e.parentNode;
+		}
+
+		// If all text in the node is selected, return the node instead
+		let cp = getCommonParent(s.anchorNode, s.focusNode);
+		let sa = getNontextParent(s.anchorNode);
+		let sf = getNontextParent(s.focusNode);
+		let st = $.trim(s.toString());
+		if ($.trim(sa.textContent) === st) {
+			rv.e = sa;
+		}
+		else if ($.trim(sf.textContent) === st) {
+			rv.e = sf;
+		}
+		else if (cp && $.trim(cp.textContent) === st) {
+			rv.e = cp;
+		}
+		else {
+			rv.t = st;
+		}
+	}
+
+	return rv;
 }
 
 /* exported checkActiveElement */
@@ -535,8 +778,8 @@ function checkActiveElement() {
 
 	context = getTextOrElement();
 	console.log(context);
-	//return;
 
+	// Cannot open Featherlight before getTextOrElement(), as that messes with activeElement
 	$.featherlight({
 		iframe: 'about:blank',
 		iframeWidth: 800,
@@ -546,12 +789,11 @@ function checkActiveElement() {
 		iframeMaxWidth: '80%',
 		iframeMaxHeight: '80%',
 		namespace: 'gt-popup',
+		beforeClose: cleanContext,
 	});
 
-	let t = '<s1>\n' + (context.t ? context.t : context.e.textContent) + '\n</s1>';
-
-	$.post('https://retmig.dk/callback.php?a=danproof', {t}).done(parseResult).fail(() => {
-		$.featherlight.close();
-		console.log(this);
-	});
+	to_send = prepareTexts();
+	to_send_i = 0;
+	console.log(to_send);
+	sendTexts();
 }

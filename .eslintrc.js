@@ -25,7 +25,7 @@ module.exports = {
 		"no-multiple-empty-lines": "error",
 		"no-new-object": "error",
 		"no-trailing-spaces": "error",
-		"no-use-before-define": "error",
+		"no-use-before-define": ["error", { "functions": false, "classes": true, "variables": true }],
 		"no-var": "error",
 		"prefer-numeric-literals": "error",
 		"semi": ["error", "always"],

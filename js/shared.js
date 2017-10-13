@@ -17,7 +17,7 @@ Array.prototype.unique = function() {
 };
 
 /* exported Defs */
-let Defs = {
+const Defs = {
 	CAP_ADMIN:	  (1 <<	 0),
 	CAP_COMMA:	  (1 <<	 1),
 	CAP_DANPROOF: (1 <<	 2),
@@ -52,8 +52,17 @@ let Defs = {
 };
 Defs.OPT_DP_IGNORE_UNKNOWN = Defs.OPT_DP_IGNORE_NAMES|Defs.OPT_DP_IGNORE_COMP|Defs.OPT_DP_IGNORE_ABBR|Defs.OPT_DP_IGNORE_OTHER;
 
+// Upper-case because we compare them to DOM nodeName
+/* exported text_nodes */
+const text_nodes = {'ADDRESS': true, 'ARTICLE': true, 'ASIDE': true, 'BLOCKQUOTE': true, 'BODY': true, 'CANVAS': true, 'DD': true, 'DIV': true, 'DL': true, 'FIELDSET': true, 'FIGCAPTION': true, 'FIGURE': true, 'FOOTER': true, 'FORM': true, 'H1': true, 'H2': true, 'H3': true, 'H4': true, 'H5': true, 'H6': true, 'HEADER': true, 'HGROUP': true, 'HR': true, 'LI': true, 'MAIN': true, 'NAV': true, 'NOSCRIPT': true, 'OL': true, 'OUTPUT': true, 'P': true, 'PRE': true, 'SECTION': true, 'TABLE': true, 'TD': true, 'TH': true, 'UL': true, 'VIDEO': true};
+/* exported tnjq */
+const tnjq = Object.keys(text_nodes).join(',');
+// While inline, skip these: BR,IMG,MAP,OBJECT,SCRIPT,BUTTON,INPUT,SELECT,TEXTAREA
+/* exported itjq */
+const itjq = 'B,BIG,I,SMALL,TT,ABBR,ACRONYM,CITE,CODE,DFN,EM,KBD,STRONG,SAMP,TIME,VAR,A,BDO,Q,SPAN,SUB,SUP,LABEL';
+
 /* exported g_conf_defaults */
-let g_conf_defaults = {
+const g_conf_defaults = {
 	opt_onlyConfident: false,
 	opt_ignUNames: false,
 	opt_ignUComp: false,
@@ -128,9 +137,36 @@ function escHTML(t) {
 
 /* exported decHTML */
 function decHTML(t) {
-	let nt = t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&');
+	let nt = t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&');
 	//console.log([t, nt]);
 	return nt;
+}
+
+/* exported findTextNodes */
+function findTextNodes(nodes) {
+	let tns = [], wsx = /\S/;
+
+	if (!$.isArray(nodes)) {
+		nodes = [nodes];
+	}
+
+	function _findTextNodes(node) {
+		if (node.nodeType === Node.TEXT_NODE) {
+			if (wsx.test(node.nodeValue)) {
+				tns.push(node);
+			}
+		}
+		else {
+			for (let i=0 ; i < node.childNodes.length ; ++i) {
+				_findTextNodes(node.childNodes[i]);
+			}
+		}
+	}
+
+	for (let i=0 ; i<nodes.length ; ++i) {
+		_findTextNodes(nodes[i]);
+	}
+	return tns;
 }
 
 /* exported sanitize_result */
@@ -178,4 +214,12 @@ function getCommonParent(a, b) {
 	} while (b);
 
 	return null;
+}
+
+/* exported getNontextParent */
+function getNontextParent(n) {
+	while (n.nodeType === Node.TEXT_NODE) {
+		n = n.parentNode;
+	}
+	return n;
 }

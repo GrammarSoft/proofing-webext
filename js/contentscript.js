@@ -291,6 +291,23 @@ function createMarking(marking) {
 	return {space, html};
 }
 
+function replaceInContext(id, txt, word, rpl) {
+	txt = $.trim(txt);
+
+	if (context.e.tagName === 'INPUT' || context.e.tagName === 'TEXTAREA') {
+		let ot = context.e.value;
+		ot = ot.substring(ot.indexOf('<gtid-'+id+'>'), ot.indexOf('</gtid-'+id+'>'));
+		txt = ot.substring(0, ot.indexOf('>')+1) + txt;
+		let nt = ot.replace(new RegExp(escapeRegExp(txt)+'(\\s*)'+escapeRegExp(word)), txt+'$1'+rpl);
+		context.e.value = context.e.value.replace(ot, nt);
+		console.log([ot, nt, txt, word, rpl]);
+		return;
+	}
+
+	let p = $(context.e).find('[data-gtid="'+id+'"]');
+	console.log([p, txt, word, rpl]);
+}
+
 function markingDo(rpl) {
 	let p = $(floater_doc);
 	let markings = p.find('span.marking');
@@ -307,6 +324,18 @@ function markingDo(rpl) {
 			c = i;
 			break;
 		}
+	}
+
+	if (!context.t && cmarking.text() !== rpl) {
+		let par = cmarking.closest('p').get(0);
+		let txt = '';
+		for (let i=0 ; i<par.childNodes.length ; ++i) {
+			if (par.childNodes[i] == cmarking.get(0)) {
+				break;
+			}
+			txt += par.childNodes[i].textContent;
+		}
+		replaceInContext(par.getAttribute('id'), txt, cmarking.text(), rpl);
 	}
 
 	cmarking.replaceWith(rpl);
@@ -601,6 +630,9 @@ function cleanContext() {
 			$(this).children().unwrap();
 		}
 	});
+	if (context.e.tagName === 'INPUT' || context.e.tagName === 'TEXTAREA') {
+		context.e.value = $.trim(context.e.value.replace(/<gtid-s\d+>(.*?)<\/gtid-s\d+>/g, '$1'));
+	}
 }
 
 function prepareTexts() {
@@ -614,7 +646,15 @@ function prepareTexts() {
 	}
 	if (context.e.tagName === 'INPUT' || context.e.tagName === 'TEXTAREA') {
 		t = context.e.value;
+		let vals = context.e.value.replace(/\r\n/g, '\n').replace(/\r+/g, '\n').split(/\n\n+/g);
+		let text = '';
+		for (let i=0 ; i<vals.length ; ++i) {
+			let id = i+1;
+			text += '<gtid-s'+id+'>' + $.trim(vals[i]) + '</gtid-s'+id+'>\n\n';
+		}
+		context.e.value = $.trim(text);
 	}
+
 	if (t) {
 		let vals = t.replace(/\r\n/g, '\n').replace(/\r+/g, '\n').split(/\n\n+/g);
 		let text = '';

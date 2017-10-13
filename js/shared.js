@@ -194,6 +194,12 @@ function sanitize_result(txt) {
 	return txt;
 }
 
+// From https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions
+/* exported escapeRegExp */
+function escapeRegExp(string) {
+	return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+}
+
 /* exported getCommonParent */
 function getCommonParent(a, b) {
 	let ps = [a];

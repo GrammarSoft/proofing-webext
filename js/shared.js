@@ -6,15 +6,17 @@
  */
 'use strict';
 
-Array.prototype.unique = function() {
-	let unique = [];
-	for (let i=0; i<this.length; ++i) {
-		if (unique.indexOf(this[i]) == -1) {
-			unique.push(this[i]);
+if (!Array.prototype.unique) {
+	Array.prototype.unique = function() {
+		let unique = [];
+		for (let i=0; i<this.length; ++i) {
+			if (unique.indexOf(this[i]) == -1) {
+				unique.push(this[i]);
+			}
 		}
-	}
-	return unique;
-};
+		return unique;
+	};
+}
 
 /* exported Defs */
 const Defs = {
@@ -58,8 +60,8 @@ const text_nodes = {'ADDRESS': true, 'ARTICLE': true, 'ASIDE': true, 'BLOCKQUOTE
 /* exported tnjq */
 const tnjq = Object.keys(text_nodes).join(',');
 // While inline, skip these: BR,IMG,MAP,OBJECT,SCRIPT,BUTTON,INPUT,SELECT,TEXTAREA
-/* exported itjq */
-const itjq = 'B,BIG,I,SMALL,TT,ABBR,ACRONYM,CITE,CODE,DFN,EM,KBD,STRONG,SAMP,TIME,VAR,A,BDO,Q,SPAN,SUB,SUP,LABEL';
+//* exported itjq */
+//const itjq = 'B,BIG,I,SMALL,TT,ABBR,ACRONYM,CITE,CODE,DFN,EM,KBD,STRONG,SAMP,TIME,VAR,A,BDO,Q,SPAN,SUB,SUP,LABEL';
 
 /* exported g_conf_defaults */
 const g_conf_defaults = {
@@ -142,6 +144,158 @@ function decHTML(t) {
 	return nt;
 }
 
+/* exported skipNonText */
+function skipNonText(ml, i) {
+	let did = true;
+	while (did) {
+		did = false;
+		while (/^\s$/.test(ml.charAt(i))) {
+			++i;
+		}
+
+		// Skip tags
+		while (i<ml.length && ml.charAt(i) === '<') {
+			while (i<ml.length && ml.charAt(i) !== '>') {
+				// Skip attribute values
+				while (i<ml.length && ml.charAt(i) === '"') {
+					++i;
+					while (i<ml.length && ml.charAt(i) !== '"') {
+						++i;
+					}
+					++i;
+				}
+				while (i<ml.length && ml.charAt(i) === "'") {
+					++i;
+					while (i<ml.length && ml.charAt(i) !== "'") {
+						++i;
+					}
+					++i;
+				}
+				if (i<ml.length && ml.charAt(i) !== '>') {
+					++i;
+				}
+			}
+			did = true;
+			++i;
+		}
+
+		// Skip entities
+		// ToDo: Test other entities, if any
+		while (i<ml.length && ml.charAt(i) === '&') {
+			while (i<ml.length && ml.charAt(i) !== ';') {
+				++i;
+			}
+			did = true;
+			++i;
+		}
+
+		while (/^\s$/.test(ml.charAt(i))) {
+			++i;
+		}
+	}
+	return i;
+}
+
+/* exported replaceInTextNodes */
+function replaceInTextNodes(tns, txt, word, rpl) {
+	rpl = rpl.padEnd(word.length, '\ue111');
+
+	let nonl = /[^\d\wa-zA-ZéÉöÖæÆøØåÅ.,]/ig;
+	let ti = 0;
+	let ns = 0;
+	let nsi = 0;
+	for (; txt.length && ns<tns.length ; ++ns) {
+		let ml = tns[ns].textContent;
+		let i = 0;
+		for ( ; i<ml.length ; ++i) {
+			for (let tn=ti ; tn<txt.length && tn<ti+10 ; ++tn) {
+				if (txt.charAt(tn) === ml.charAt(i) || (txt.charAt(tn) === '\ue000' && nonl.test(ml.charAt(i)))) {
+					ti = tn;
+					// Find identical sequential letters, e.g. 1977
+					while (ti < txt.length-1 && txt.charAt(ti) === ml.charAt(i)) {
+						//console.log([ti, i, txt.charAt(ti), ml.charAt(i)]);
+						++ti;
+						++i;
+					}
+					break;
+				}
+			}
+			//console.log([ti, i, txt.charAt(ti), ml.charAt(i)]);
+			if (ti >= txt.length-1) {
+				break;
+			}
+		}
+
+		if (ti >= txt.length-1) {
+			nsi = i + 1;
+			if (nsi >= ml.length) {
+				++ns;
+				nsi = 0;
+			}
+			break;
+		}
+	}
+	console.log([txt, word, rpl, tns, ns, nsi, ti]);
+
+	let wi = 0;
+	for (; ns<tns.length ;) {
+		let did = false;
+		let ml = tns[ns].textContent;
+		while (nsi < ml.length && wi < word.length) {
+			if (/\s/.test(ml.charAt(nsi)) && !/\s/.test(word.charAt(wi))) {
+				did = true;
+				++nsi;
+			}
+			else if (!/\s/.test(ml.charAt(nsi)) && /\s/.test(word.charAt(wi))) {
+				did = true;
+				++wi;
+			}
+			else {
+				break;
+			}
+		}
+		if (nsi >= ml.length) {
+			++ns;
+			nsi = 0;
+		}
+		if (!did) {
+			break;
+		}
+	}
+	console.log([word, rpl, tns, ns, nsi, wi]);
+
+	for (; ns<tns.length ; ++ns) {
+		let done = false;
+		let ml = tns[ns].textContent;
+
+		for (; nsi < ml.length && wi < word.length && wi < rpl.length ; ++nsi, ++wi) {
+			ml = ml.substring(0, nsi) + rpl.charAt(wi) + ml.substring(nsi+1);
+		}
+		if (wi === word.length || wi === rpl.length) {
+			if (wi < rpl.length) {
+				ml = ml.substring(0, nsi) + rpl.substring(wi) + ml.substring(nsi);
+			}
+			if (wi < word.length) {
+				ml = ml.substring(0, nsi) + ml.substring(nsi + (word.length - wi));
+			}
+			done = true;
+		}
+
+		if (ml !== tns[ns].textContent) {
+			ml = ml.replace(/\ue111/g, '');
+			if (ml.length === 0) {
+				ml = '_';
+			}
+			tns[ns].textContent = ml;
+		}
+		nsi = 0;
+
+		if (done) {
+			break;
+		}
+	}
+}
+
 /* exported findTextNodes */
 function findTextNodes(nodes) {
 	let tns = [], wsx = /\S/;
@@ -167,6 +321,119 @@ function findTextNodes(nodes) {
 		_findTextNodes(nodes[i]);
 	}
 	return tns;
+}
+
+/* exported findVisibleTextNodes */
+function findVisibleTextNodes(nodes) {
+	let tns = [], wsx = /\S/;
+	let wnd = window;
+
+	if (!$.isArray(nodes)) {
+		nodes = [nodes];
+	}
+
+	function _findVisibleTextNodes(node) {
+		if (node.nodeType === Node.TEXT_NODE) {
+			if (wsx.test(node.nodeValue)) {
+				tns.push(node);
+			}
+		}
+		else if (node.nodeType === Node.ELEMENT_NODE) {
+			if (node.nodeName === 'STYLE' || node.nodeName === 'SCRIPT') {
+				return;
+			}
+			let sts = wnd.getComputedStyle(node);
+			if (sts.display === 'none' || sts.visibility === 'hidden' || sts.visibility === 'collapse') {
+				return;
+			}
+			for (let i=0 ; i < node.childNodes.length ; ++i) {
+				_findVisibleTextNodes(node.childNodes[i]);
+			}
+		}
+	}
+
+	for (let i=0 ; i<nodes.length ; ++i) {
+		wnd = nodes[i].ownerDocument.defaultView;
+		_findVisibleTextNodes(nodes[i]);
+	}
+	return tns;
+}
+
+/* exported getVisibleText */
+function getVisibleText(nodes) {
+	let txt = '';
+	let wnd = window;
+
+	if (!$.isArray(nodes)) {
+		nodes = [nodes];
+	}
+
+	function _getVisibleText(node) {
+		if (node.nodeType === Node.TEXT_NODE) {
+			txt += node.nodeValue;
+		}
+		else if (node.nodeType === Node.ELEMENT_NODE) {
+			if (node.nodeName === 'STYLE' || node.nodeName === 'SCRIPT') {
+				return;
+			}
+			let sts = wnd.getComputedStyle(node);
+			if (sts.display === 'none' || sts.visibility === 'hidden' || sts.visibility === 'collapse') {
+				return;
+			}
+			if (node.nodeName === 'BR') {
+				txt += '\n';
+			}
+			for (let i=0 ; i < node.childNodes.length ; ++i) {
+				_getVisibleText(node.childNodes[i]);
+			}
+		}
+	}
+
+	for (let i=0 ; i<nodes.length ; ++i) {
+		wnd = nodes[i].ownerDocument.defaultView;
+		_getVisibleText(nodes[i]);
+	}
+	return txt.replace(/ +/g, ' ');
+}
+
+/* exported getVisibleStyledText */
+function getVisibleStyledText(pnode) {
+	let txt = '';
+	let wnd = pnode.ownerDocument.defaultView;
+	let ni = 0;
+
+	function _getVisibleStyledText(node) {
+		if (node.nodeType === Node.TEXT_NODE) {
+			if (node.parentNode != pnode) {
+				let nn = node.parentNode.nodeName.toLowerCase();
+				++ni;
+				txt += '<STYLE:'+nn+':'+ni+'>';
+				txt += node.nodeValue;
+				txt += '</STYLE:'+nn+':'+ni+'>';
+			}
+			else {
+				txt += node.nodeValue;
+			}
+		}
+		else if (node.nodeType === Node.ELEMENT_NODE) {
+			if (node.nodeName === 'STYLE' || node.nodeName === 'SCRIPT') {
+				return;
+			}
+			let sts = wnd.getComputedStyle(node);
+			if (sts.display === 'none' || sts.visibility === 'hidden' || sts.visibility === 'collapse') {
+				return;
+			}
+			if (node.nodeName === 'BR') {
+				txt += '\n';
+			}
+			for (let i=0 ; i < node.childNodes.length ; ++i) {
+				_getVisibleStyledText(node.childNodes[i]);
+			}
+		}
+	}
+
+	_getVisibleStyledText(pnode);
+	return txt;
 }
 
 /* exported sanitize_result */
@@ -198,6 +465,15 @@ function sanitize_result(txt) {
 /* exported escapeRegExp */
 function escapeRegExp(string) {
 	return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+}
+
+/* exported escapeRegExpTokens */
+function escapeRegExpTokens(txt) {
+	let ts = txt.split(/\s+/g);
+	for (let i=0 ; i<ts.length ; ++i) {
+		ts[i] = escapeRegExp(ts[i]);
+	}
+	return ts.join('\\s+');
 }
 
 /* exported getCommonParent */

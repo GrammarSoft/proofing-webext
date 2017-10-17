@@ -6,17 +6,19 @@
  */
 'use strict';
 /* globals Defs */
-/* globals decHTML */
 /* globals escHTML */
-/* globals findTextNodes */
+/* globals escapeRegExpTokens */
+/* globals findVisibleTextNodes */
 /* globals g_conf_defaults */
 /* globals ga_log */
 /* globals getCommonParent */
 /* globals getNontextParent */
+/* globals getVisibleStyledText */
+/* globals getVisibleText */
 /* globals is_upper */
-/* globals itjq */
 /* globals log_click */
 /* globals marking_types */
+/* globals replaceInTextNodes */
 /* globals sanitize_result */
 /* globals text_nodes */
 /* globals tnjq */
@@ -166,7 +168,7 @@ function markingInputOne() {
 	let txt = $(this).closest('div.popover').find('#input').val();
 	ga_log('marking', 'input-one', txt);
 	log_click({'input': cmarking.attr('data-types'), 'w': cmarking.text(), 'r': txt});
-	markingDo(txt);
+	markingDo(cmarking.text(), txt);
 }
 
 function markingInputAll() {
@@ -181,13 +183,13 @@ function markingInputAll() {
 		if (cmarking.get(0) == cm.get(0) || cmarking.text() !== word || cmarking.attr('data-types') !== types) {
 			return;
 		}
-		markingDo(txt);
+		markingDo(cmarking.text(), txt);
 	});
 
 	cmarking = cm;
 	ga_log('marking', 'input-all', txt);
 	log_click({'input': cmarking.attr('data-types'), 'w': cmarking.text(), 'r': txt});
-	markingDo(txt);
+	markingDo(cmarking.text(), txt);
 }
 
 function markingInput() {
@@ -298,17 +300,23 @@ function replaceInContext(id, txt, word, rpl) {
 		let ot = context.e.value;
 		ot = ot.substring(ot.indexOf('<gtid-'+id+'>'), ot.indexOf('</gtid-'+id+'>'));
 		txt = ot.substring(0, ot.indexOf('>')+1) + txt;
-		let nt = ot.replace(new RegExp(escapeRegExp(txt)+'(\\s*)'+escapeRegExp(word)), txt+'$1'+rpl);
+		// ToDo: Make this less naive for cases where backend has changed tokens
+		let nt = ot.replace(new RegExp(escapeRegExpTokens(txt)+'(\\s*)'+escapeRegExpTokens(word)), txt+'$1'+rpl);
 		context.e.value = context.e.value.replace(ot, nt);
 		console.log([ot, nt, txt, word, rpl]);
 		return;
 	}
 
-	let p = $(context.e).find('[data-gtid="'+id+'"]');
-	console.log([p, txt, word, rpl]);
+	let p = $(context.e).parent().find('[data-gtid="'+id+'"]');
+	p = p.get(0);
+	p.normalize();
+
+	let tns = findVisibleTextNodes(p);
+	replaceInTextNodes(tns, txt, word, rpl);
+	p.normalize();
 }
 
-function markingDo(rpl) {
+function markingDo(word, rpl) {
 	let p = $(floater_doc);
 	let markings = p.find('span.marking');
 	markings.popover('dispose');
@@ -326,7 +334,7 @@ function markingDo(rpl) {
 		}
 	}
 
-	if (!context.t && cmarking.text() !== rpl) {
+	if (!context.t && word !== rpl) {
 		let par = cmarking.closest('p').get(0);
 		let txt = '';
 		for (let i=0 ; i<par.childNodes.length ; ++i) {
@@ -335,7 +343,7 @@ function markingDo(rpl) {
 			}
 			txt += par.childNodes[i].textContent;
 		}
-		replaceInContext(par.getAttribute('id'), txt, cmarking.text(), rpl);
+		replaceInContext(par.getAttribute('id'), txt, word, rpl);
 	}
 
 	cmarking.replaceWith(rpl);
@@ -358,6 +366,7 @@ function markingAccept(ev) {
 		return false;
 	}
 
+	let word = cmarking.text();
 	let rpl = '';
 	let types = cmarking.attr('data-types');
 	let click = {'accept': types, 'w': cmarking.text()};
@@ -365,6 +374,7 @@ function markingAccept(ev) {
 		rpl = '';
 	}
 	else if (types.indexOf('@insert') !== -1) {
+		word = '';
 		rpl = cmarking.text();
 	}
 	else {
@@ -374,7 +384,7 @@ function markingAccept(ev) {
 
 	ga_log('marking', 'accept', cmarking.attr('data-types'));
 	log_click(click);
-	markingDo(rpl);
+	markingDo(word, rpl);
 
 	return false;
 }
@@ -385,10 +395,10 @@ function markingDiscard(ev) {
 
 	let types = cmarking.attr('data-types');
 	if (types.indexOf('@insert') !== -1) {
-		markingDo('');
+		markingDo(cmarking.text(), '');
 	}
 	else {
-		markingDo(cmarking.text());
+		markingDo(cmarking.text(), cmarking.text());
 	}
 
 	return false;
@@ -400,11 +410,11 @@ function markingYellow() {
 		let s = cmarking.attr('data-sugs').split('\t')[0];
 		if (s === cmarking.text() || s.toUpperCase() === cmarking.text().toUpperCase()) {
 			click.r = s;
-			markingDo(s);
+			markingDo(cmarking.text(), s);
 		}
 	}
 	else {
-		markingDo(cmarking.text());
+		markingDo(cmarking.text(), cmarking.text());
 	}
 	ga_log('marking', 'yellow', cmarking.attr('data-types'));
 	log_click(click);
@@ -670,7 +680,7 @@ function prepareTexts() {
 		return to_send;
 	}
 
-	let nodes = $(findTextNodes(context.e)).closest(tnjq).get();
+	let nodes = $(findVisibleTextNodes(context.e)).closest(tnjq).get();
 	console.log(nodes);
 	for (let i=0 ; i<nodes.length ; ++i) {
 		let need = false;
@@ -699,36 +709,20 @@ function prepareTexts() {
 		}
 	}
 
-	let ps = $(findTextNodes(context.e)).closest(tnjq).get();
+	let ps = $(findVisibleTextNodes(context.e)).closest(tnjq).get();
 	console.log(ps);
 	let text = '';
 	for (let i=0 ; i<ps.length ; ++i) {
-		let p = $(ps[i]);
-		let ptxt = p.clone();
-		let nt = 0;
-		let did = true;
-		for (let j=0 ; j<100 && did ; ++j) {
-			did = false;
-			ptxt.find(itjq).each(function() {
-				let t = $(this);
-				let nn = this.nodeName.toLowerCase();
-				if ($.trim(t.text())) {
-					++nt;
-					t.replaceWith('[STYLE:'+nn+':'+nt+']'+t.html()+'[/STYLE:'+nn+':'+nt+']');
-				}
-				else {
-					t.remove();
-				}
-				did = true;
-			});
-		}
-		ptxt = $.trim(ptxt.html().replace(/<br\/?\s*>/g, '\n').replace(/<[^>]+>/g, '').replace(/\[(STYLE:\w+:\w+)\]/g, '<$1>').replace(/\[(\/STYLE:\w+:\w+)\]/g, '<$1>'));
+		ps[i].normalize();
+		let ptxt = getVisibleStyledText(ps[i]);
+		ptxt = $.trim(ptxt.replace(/  +/g, ' '));
 		if (!ptxt) {
 			continue;
 		}
+
 		let id = i+1;
-		p.attr('data-gtid', 's'+id);
-		text += '<s' + id + '>\n' + decHTML(ptxt) + '\n</s' + id + '>\n\n';
+		ps[i].setAttribute('data-gtid', 's'+id);
+		text += '<s' + id + '>\n' + ptxt + '\n</s' + id + '>\n\n';
 
 		if (text.length >= Defs.MAX_RQ_SIZE) {
 			to_send.push(text);
@@ -787,13 +781,13 @@ function getTextOrElement() {
 		let sa = getNontextParent(s.anchorNode);
 		let sf = getNontextParent(s.focusNode);
 		let st = $.trim(s.toString());
-		if ($.trim(sa.textContent) === st) {
+		if ($.trim(getVisibleText(sa)) === st) {
 			rv.e = sa;
 		}
-		else if ($.trim(sf.textContent) === st) {
+		else if ($.trim(getVisibleText(sf)) === st) {
 			rv.e = sf;
 		}
-		else if (cp && $.trim(cp.textContent) === st) {
+		else if (cp && $.trim(getVisibleText(cp)) === st) {
 			rv.e = cp;
 		}
 		else {

@@ -75,6 +75,11 @@ const g_conf_defaults = {
 	opt_colorBlind: false,
 };
 
+/* exported rects_overlap */
+function rects_overlap(ra, rb) {
+	return ra.left < rb.right && ra.right > rb.left && ra.top < rb.bottom && ra.bottom > rb.top;
+}
+
 /* exported ga_log */
 function ga_log(cat, act, lbl) {
 	console.log([cat, act, lbl]);

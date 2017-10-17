@@ -338,6 +338,9 @@ function markingDo(word, rpl) {
 		let par = cmarking.closest('p').get(0);
 		let txt = '';
 		for (let i=0 ; i<par.childNodes.length ; ++i) {
+			if (par.hasAttribute('data-types') && par.getAttribute('data-types').indexOf('@insert') !== -1) {
+				continue;
+			}
 			if (par.childNodes[i] == cmarking.get(0)) {
 				break;
 			}
@@ -623,6 +626,16 @@ function sendTexts() {
 
 function cleanContext() {
 	let b = $(context.e).closest('body');
+
+	// Google Docs, if there was a selection
+	let ps = b.find('span.gtdp-word').parent();
+	b.find('span.gtdp-word').each(function() {
+		$(this).replaceWith(this.textContent);
+	});
+	ps.each(function() {
+		this.normalize();
+	});
+
 	b.find('[data-gtid]').removeAttr('data-gtid');
 	b.find('div.gt-unwrap').each(function () {
 		let nt = false;
@@ -650,13 +663,24 @@ function prepareTexts() {
 
 	let to_send = [];
 
-	let t = null;
+	let t = '';
+	if (context.g) {
+		if (context.t) {
+			t = context.t;
+		}
+		else {
+			for (let i=0 ; i<context.g.length ; ++i) {
+				t += context.g[i].textContent + '\n\n';
+			}
+		}
+	}
+
 	if (context.t) {
 		t = context.t;
 	}
 	if (context.e.tagName === 'INPUT' || context.e.tagName === 'TEXTAREA') {
 		t = context.e.value;
-		let vals = context.e.value.replace(/\r\n/g, '\n').replace(/\r+/g, '\n').split(/\n\n+/g);
+		let vals = context.e.value.replace(/\r\n/g, '\n').replace(/\r+/g, '\n').replace(/\n\n+/g, '\n\n').split(/\n\n+/g);
 		let text = '';
 		for (let i=0 ; i<vals.length ; ++i) {
 			let id = i+1;
@@ -666,9 +690,13 @@ function prepareTexts() {
 	}
 
 	if (t) {
-		let vals = t.replace(/\r\n/g, '\n').replace(/\r+/g, '\n').split(/\n\n+/g);
+		let vals = t.replace(/\u200b/g, '').replace(/\u00a0/g, ' ').replace(/\r\n/g, '\n').replace(/\r+/g, '\n').replace(/\n\n+/g, '\n\n').split(/\n\n+/g);
 		let text = '';
 		for (let i=0 ; i<vals.length ; ++i) {
+			if ($.trim(vals[i]).length === 0) {
+				continue;
+			}
+
 			let id = i+1;
 			text += '<s'+id+'>\n' + vals[i] + '\n</s'+id+'>\n\n';
 			if (text.length >= Defs.MAX_RQ_SIZE) {
@@ -735,10 +763,87 @@ function prepareTexts() {
 }
 
 function getTextOrElement() {
-	let rv = {e: null, t: null};
+	let rv = {e: null, t: null, g: null};
 	let s = window.getSelection();
 	let e = document.activeElement;
 	let w = window;
+
+	if ($('.docs-texteventtarget-iframe').length) {
+		rv.e = $('body').get(0);
+		rv.g = [];
+
+		let ss = [];
+		$('.kix-selection-overlay').each(function() {
+			ss.push(this.getBoundingClientRect());
+		});
+
+		if (!ss.length) {
+			rv.g = $('.kix-paragraphrenderer').get();
+			return rv;
+		}
+
+		$('.kix-paragraphrenderer').each(function() {
+			let tsel = '';
+			$(this).find('.kix-wordhtmlgenerator-word-node').each(function() {
+				let tline = '';
+				for (let i=0 ; i<ss.length ; ++i) {
+					// Skip selection if no words in this line were selected
+					if (!rects_overlap(ss[i], this.getBoundingClientRect())) {
+						continue;
+					}
+
+					// Wrap each word in a span that we can further check overlap of
+					let span = $(this).find('.goog-inline-block').get(0).outerHTML;
+					$(this).find('.goog-inline-block').remove();
+					this.innerHTML = this.innerHTML.replace(/<[^<>]+>/g, '').replace(/([^\u200b\s]+)/g, '<span class="gtdp-word">$1</span>') + span;
+					//console.log([ss[i], this]);
+
+					$(this).find('.gtdp-word').each(function() {
+						// Skip whole word if no letters in this word were selected
+						if (!rects_overlap(ss[i], this.getBoundingClientRect())) {
+							// Wipe our handle to the word so we know it's not active
+							$(this).replaceWith(this.textContent);
+							return;
+						}
+						// If any letter was selected, append the whole word
+						tline += this.textContent + ' ';
+					});
+					this.normalize();
+				}
+				if (tline.length) {
+					tsel += tline;
+				}
+			});
+
+			tsel = $.trim(tsel.replace(/\u200b+/g, '').replace(/\u00a0+/g, ' ').replace(/  +/g, ' ').replace(/\n\n+/g, '\n\n'));
+			if (tsel.length === 0) {
+				return;
+			}
+			if (rv.t) {
+				rv.t += tsel + '\n\n';
+				return;
+			}
+
+			let ptxt = $.trim(this.textContent.replace(/\u200b+/g, '').replace(/\u00a0+/g, ' ').replace(/  +/g, ' ').replace(/\n\n+/g, '\n\n'));
+			console.log([this, tsel, ptxt]);
+			if (tsel === ptxt) {
+				$(this).find('.gtdp-word').each(function() {
+					$(this).replaceWith(this.textContent);
+				});
+				this.normalize();
+				rv.g.push(this);
+			}
+			else {
+				rv.t = '';
+				for (let i=0 ; i<rv.g.length ; ++i) {
+					rv.t += rv.g[i].textContent + '\n\n';
+				}
+				rv.t += tsel + '\n\n';
+			}
+		});
+
+		return rv;
+	}
 
 	if (e && e.tagName !== 'BODY') {
 		if (e.tagName === 'IFRAME' && e.contentWindow) {
@@ -809,6 +914,17 @@ function checkActiveElement() {
 		g_conf = items;
 		console.log(g_conf);
 	});
+
+	if (false) {
+		let d = $('body').find('div');
+		d.attr('data-gtid', 's1');
+		context = {
+			e: d.get(0),
+			t: null,
+		};
+		replaceInContext('s1', 'De malede ', 'husen', '123456');
+		return;
+	}
 
 	context = getTextOrElement();
 	console.log(context);

@@ -771,6 +771,12 @@ function getTextOrElement() {
 	if ($('.docs-texteventtarget-iframe').length) {
 		rv.e = $('body').get(0);
 		rv.g = [];
+		rv.c = null;
+		$('.kix-cursor').each(function() {
+			if ($.trim(this.textContent).length == 0) {
+				rv.c = this;
+			}
+		});
 
 		let ss = [];
 		$('.kix-selection-overlay').each(function() {

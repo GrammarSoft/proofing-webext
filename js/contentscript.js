@@ -664,13 +664,13 @@ function prepareTexts() {
 	let to_send = [];
 
 	let t = '';
-	if (context.g) {
+	if (context.ggl) {
 		if (context.t) {
 			t = context.t;
 		}
 		else {
-			for (let i=0 ; i<context.g.length ; ++i) {
-				t += context.g[i].textContent + '\n\n';
+			for (let i=0 ; i<context.ggl.elems.length ; ++i) {
+				t += context.ggl.elems[i].textContent + '\n\n';
 			}
 		}
 	}
@@ -763,18 +763,17 @@ function prepareTexts() {
 }
 
 function getTextOrElement() {
-	let rv = {e: null, t: null, g: null};
+	let rv = {e: null, t: null, ggl: null};
 	let s = window.getSelection();
 	let e = document.activeElement;
 	let w = window;
 
 	if ($('.docs-texteventtarget-iframe').length) {
 		rv.e = $('body').get(0);
-		rv.g = [];
-		rv.c = null;
+		rv.ggl = {elems: [], cursor: null};
 		$('.kix-cursor').each(function() {
 			if ($.trim(this.textContent).length == 0) {
-				rv.c = this;
+				rv.ggl.cursor = this;
 			}
 		});
 
@@ -784,7 +783,7 @@ function getTextOrElement() {
 		});
 
 		if (!ss.length) {
-			rv.g = $('.kix-paragraphrenderer').get();
+			rv.ggl.elems = $('.kix-paragraphrenderer').get();
 			return rv;
 		}
 
@@ -837,12 +836,12 @@ function getTextOrElement() {
 					$(this).replaceWith(this.textContent);
 				});
 				this.normalize();
-				rv.g.push(this);
+				rv.ggl.elems.push(this);
 			}
 			else {
 				rv.t = '';
-				for (let i=0 ; i<rv.g.length ; ++i) {
-					rv.t += rv.g[i].textContent + '\n\n';
+				for (let i=0 ; i<rv.ggl.elems.length ; ++i) {
+					rv.t += rv.ggl.elems[i].textContent + '\n\n';
 				}
 				rv.t += tsel + '\n\n';
 			}

@@ -1,3 +1,9 @@
+/*!
+ * Copyright 2016-2017 GrammarSoft ApS <info@grammarsoft.com> at https://grammarsoft.com/
+ * All Rights Reserved
+ * Linguistic backend by Eckhard Bick <eckhard.bick@gmail.com>
+ * Frontend by Tino Didriksen <mail@tinodidriksen.com>
+ */
 'use strict';
 /* globals Defs */
 /* globals context */
@@ -15,6 +21,11 @@ function ggl_getCursor() {
 	return null;
 }
 
+/* exported ggl_replaceInContext */
+function ggl_replaceInContext(id, txt, word, rpl) {
+	console.log([id, txt, word, rpl]);
+}
+
 /* exported ggl_prepareTexts */
 function ggl_prepareTexts() {
 	let to_send = [];
@@ -23,7 +34,7 @@ function ggl_prepareTexts() {
 	for (let i=0 ; i<context.ggl.elems.length ; ++i) {
 		context.ggl.elems[i].normalize();
 		let ptxt = getVisibleText(context.ggl.elems[i]);
-		ptxt = $.trim(ptxt.replace(/  +/g, ' '));
+		ptxt = $.trim(ptxt.replace(/\u200b/g, '').replace(/\u00a0/g, ' ').replace(/  +/g, ' '));
 		if (!ptxt) {
 			continue;
 		}

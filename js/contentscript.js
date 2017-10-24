@@ -16,6 +16,7 @@
 /* globals getVisibleStyledText */
 /* globals getVisibleText */
 /* globals ggl_getTextOrElement */
+/* globals ggl_replaceInContext */
 /* globals ggl_prepareTexts */
 /* globals is_upper */
 /* globals log_click */
@@ -297,6 +298,10 @@ function createMarking(marking) {
 
 function replaceInContext(id, txt, word, rpl) {
 	txt = $.trim(txt);
+
+	if (context.ggl) {
+		return ggl_replaceInContext(id, txt, word, rpl);
+	}
 
 	if (context.e.tagName === 'INPUT' || context.e.tagName === 'TEXTAREA') {
 		let ot = context.e.value;
@@ -740,7 +745,7 @@ function prepareTexts() {
 	for (let i=0 ; i<ps.length ; ++i) {
 		ps[i].normalize();
 		let ptxt = getVisibleStyledText(ps[i]);
-		ptxt = $.trim(ptxt.replace(/  +/g, ' '));
+		ptxt = $.trim(ptxt.replace(/\u200b/g, '').replace(/\u00a0/g, ' ').replace(/  +/g, ' '));
 		if (!ptxt) {
 			continue;
 		}

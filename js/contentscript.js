@@ -15,6 +15,8 @@
 /* globals getNontextParent */
 /* globals getVisibleStyledText */
 /* globals getVisibleText */
+/* globals ggl_getTextOrElement */
+/* globals ggl_prepareTexts */
 /* globals is_upper */
 /* globals log_click */
 /* globals marking_types */
@@ -349,6 +351,7 @@ function markingDo(word, rpl) {
 		replaceInContext(par.getAttribute('id'), txt, word, rpl);
 	}
 
+	// ToDo: escHTML() ?
 	cmarking.replaceWith(rpl);
 	cmarking = null;
 
@@ -603,6 +606,7 @@ function parseResult(rv) {
 }
 
 function sendTexts() {
+	// ToDo: Cache parse results on a per-paragraph basis - hash the paragraph content as key ( https://github.com/garycourt/murmurhash-js )
 	if (to_send_i < to_send.length) {
 		let text = to_send[to_send_i];
 		++to_send_i;
@@ -630,7 +634,7 @@ function cleanContext() {
 	// Google Docs, if there was a selection
 	let ps = b.find('span.gtdp-word').parent();
 	b.find('span.gtdp-word').each(function() {
-		$(this).replaceWith(this.textContent);
+		$(this).replaceWith(escHTML(this.textContent));
 	});
 	ps.each(function() {
 		this.normalize();
@@ -665,14 +669,7 @@ function prepareTexts() {
 
 	let t = '';
 	if (context.ggl) {
-		if (context.t) {
-			t = context.t;
-		}
-		else {
-			for (let i=0 ; i<context.ggl.elems.length ; ++i) {
-				t += context.ggl.elems[i].textContent + '\n\n';
-			}
-		}
+		return ggl_prepareTexts();
 	}
 
 	if (context.t) {
@@ -769,85 +766,7 @@ function getTextOrElement() {
 	let w = window;
 
 	if ($('.docs-texteventtarget-iframe').length) {
-		rv.e = $('body').get(0);
-		rv.ggl = {elems: [], cursor: null};
-		$('.kix-cursor').each(function() {
-			if ($.trim(this.textContent).length == 0) {
-				rv.ggl.cursor = this;
-			}
-		});
-
-		let ss = [];
-		$('.kix-selection-overlay').each(function() {
-			ss.push(this.getBoundingClientRect());
-		});
-
-		if (!ss.length) {
-			rv.ggl.elems = $('.kix-paragraphrenderer').get();
-			return rv;
-		}
-
-		$('.kix-paragraphrenderer').each(function() {
-			let tsel = '';
-			$(this).find('.kix-wordhtmlgenerator-word-node').each(function() {
-				let tline = '';
-				for (let i=0 ; i<ss.length ; ++i) {
-					// Skip selection if no words in this line were selected
-					if (!rects_overlap(ss[i], this.getBoundingClientRect())) {
-						continue;
-					}
-
-					// Wrap each word in a span that we can further check overlap of
-					let span = $(this).find('.goog-inline-block').get(0).outerHTML;
-					$(this).find('.goog-inline-block').remove();
-					this.innerHTML = this.innerHTML.replace(/<[^<>]+>/g, '').replace(/([^\u200b\s]+)/g, '<span class="gtdp-word">$1</span>') + span;
-					//console.log([ss[i], this]);
-
-					$(this).find('.gtdp-word').each(function() {
-						// Skip whole word if no letters in this word were selected
-						if (!rects_overlap(ss[i], this.getBoundingClientRect())) {
-							// Wipe our handle to the word so we know it's not active
-							$(this).replaceWith(this.textContent);
-							return;
-						}
-						// If any letter was selected, append the whole word
-						tline += this.textContent + ' ';
-					});
-					this.normalize();
-				}
-				if (tline.length) {
-					tsel += tline;
-				}
-			});
-
-			tsel = $.trim(tsel.replace(/\u200b+/g, '').replace(/\u00a0+/g, ' ').replace(/  +/g, ' ').replace(/\n\n+/g, '\n\n'));
-			if (tsel.length === 0) {
-				return;
-			}
-			if (rv.t) {
-				rv.t += tsel + '\n\n';
-				return;
-			}
-
-			let ptxt = $.trim(this.textContent.replace(/\u200b+/g, '').replace(/\u00a0+/g, ' ').replace(/  +/g, ' ').replace(/\n\n+/g, '\n\n'));
-			console.log([this, tsel, ptxt]);
-			if (tsel === ptxt) {
-				$(this).find('.gtdp-word').each(function() {
-					$(this).replaceWith(this.textContent);
-				});
-				this.normalize();
-				rv.ggl.elems.push(this);
-			}
-			else {
-				rv.t = '';
-				for (let i=0 ; i<rv.ggl.elems.length ; ++i) {
-					rv.t += rv.ggl.elems[i].textContent + '\n\n';
-				}
-				rv.t += tsel + '\n\n';
-			}
-		});
-
-		return rv;
+		return ggl_getTextOrElement();
 	}
 
 	if (e && e.tagName !== 'BODY') {
@@ -952,3 +871,14 @@ function checkActiveElement() {
 	console.log(to_send);
 	sendTexts();
 }
+
+// If on Google Docs, inject script into page context to allow communication with keyboard event handlers
+setTimeout(() => {
+	if (!$('.docs-texteventtarget-iframe').length) {
+		return;
+	}
+
+	let script = document.createElement('script');
+	script.src = chrome.extension.getURL('js/google-inject.js');
+	document.body.appendChild(script);
+}, 750);

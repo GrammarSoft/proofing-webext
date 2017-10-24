@@ -34,6 +34,12 @@
 	],
 	"content_scripts": [
 		{
+			"matches": ["http://*.google.com/*", "https://*.google.com/*"],
+			"js": [
+				"js/google.js"
+			]
+		},
+		{
 			"matches": ["http://*/*", "https://*/*", "file:///*"],
 			"css": [
 				"vendor/featherlight.min.css",
@@ -45,7 +51,7 @@
 				"vendor/featherlight.min.js",
 				"vendor/popper.min.js",
 				"vendor/bootstrap.min.js",
-				"js/mark_types.js",
+				"js/mark-types.js",
 				"js/shared.js",
 				"js/contentscript.js"
 			]

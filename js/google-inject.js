@@ -13,7 +13,7 @@ let iframe = null;
 function noop() {
 }
 
-function handleKeyEvent(e) {
+function dispatchKeyEvent(e) {
 	let event = {
 		// Event members
 		type: e.etype, target: iframe.contentDocument, currentTarget: iframe.contentDocument, eventPhase: 0, cancelBubble: true, bubbles: false, cancelable: true, defaultPrevented: true, composed: false, isTrusted: true, timeStamp: 0, preventDefault: noop, stopPropagation: noop,
@@ -36,12 +36,9 @@ function handleKeyEvent(e) {
 }
 
 function handleKeyMessage(e) {
-	if (!e.data.hasOwnProperty('type') || e.data.type !== 'gtdp-key') {
-		return;
-	}
 	e.preventDefault();
-
 	e = e.data;
+
 	if (!e.hasOwnProperty('repeat')) {
 		e.repeat = 1;
 	}
@@ -54,12 +51,34 @@ function handleKeyMessage(e) {
 	if (e.event.hasOwnProperty('key') && !e.event.hasOwnProperty('charCode')) {
 		for (let i=0 ; i<e.event.key.length ; ++i) {
 			e.event.which = e.event.charCode = e.event.key.charCodeAt(i);
-			handleKeyEvent(e);
+			dispatchKeyEvent(e);
 		}
 		return;
 	}
 
-	handleKeyEvent(e);
+	dispatchKeyEvent(e);
+}
+
+function handleGotoPar(e) {
+	e.preventDefault();
+	e = e.data;
+
+	let ps = document.getElementsByClassName('kix-paragraphrenderer');
+	for (let i=0 ; i<ps.length ; ++i) {
+	}
+}
+
+function handleMessage(e) {
+	if (!e.data.hasOwnProperty('type')) {
+		return;
+	}
+
+	switch (e.data.type) {
+	case 'gtdp-key':
+		return handleKey(e);
+	case 'gtdp-goto-par':
+		return handleGotoPar(e);
+	}
 }
 
 setTimeout(() => {
@@ -93,5 +112,5 @@ setTimeout(() => {
 		}
 	}
 
-	window.addEventListener('message', handleKeyMessage);
+	window.addEventListener('message', handleMessage);
 }, 250);

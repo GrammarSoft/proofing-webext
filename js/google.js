@@ -7,9 +7,18 @@
 'use strict';
 /* globals Defs */
 /* globals context */
-/* globals escHTML */
 /* globals getVisibleText */
 /* globals rects_overlap */
+
+const Keys = {
+	backspace: 8,
+	home: 36,
+	left: 37,
+	up: 38,
+	right: 39,
+	down: 40,
+	delete: 46,
+};
 
 function ggl_getCursor() {
 	let cs = $('.kix-cursor').get();
@@ -21,9 +30,57 @@ function ggl_getCursor() {
 	return null;
 }
 
+function ggl_cursorToLine_left(line) {
+	let cb = context.cursor.getBoundingClientRect();
+	let lb = line.getBoundingClientRect();
+	if (cb.top > lb.top) {
+		console.log(['Left', cb.top, lb.bottom]);
+		window.postMessage({type: 'gtdp-key', etype: 'keydown', event: {keyCode: Keys.left}}, '*');
+		setTimeout(() => { ggl_cursorToLine_left(line); }, 1);
+	}
+	else {
+		console.log('Left -> Right');
+		window.postMessage({type: 'gtdp-key', etype: 'keydown', event: {keyCode: Keys.right}}, '*');
+	}
+}
+
+function ggl_cursorToLine_right(line) {
+	let cb = context.cursor.getBoundingClientRect();
+	let lb = line.getBoundingClientRect();
+	if (cb.top < lb.bottom) {
+		console.log(['Right', cb.top, lb.bottom]);
+		window.postMessage({type: 'gtdp-key', etype: 'keydown', event: {keyCode: Keys.right}, repeat: 50}, '*');
+		setTimeout(() => { ggl_cursorToLine_right(line); }, 1);
+	}
+	else {
+		console.log('Right -> Left');
+		setTimeout(() => { ggl_cursorToLine_left(line); }, 1);
+	}
+}
+
+function ggl_cursorToLine(line) {
+	let cb = context.cursor.getBoundingClientRect();
+	let lb = line.getBoundingClientRect();
+	if (cb.top < lb.bottom) {
+		setTimeout(() => { ggl_cursorToLine_right(line); }, 1);
+	}
+	else {
+		setTimeout(() => { ggl_cursorToLine_left(line); }, 1);
+	}
+}
+
 /* exported ggl_replaceInContext */
 function ggl_replaceInContext(id, txt, word, rpl) {
+	if (!context.hasOwnProperty('cursor') || !context.cursor) {
+		context.cursor = ggl_getCursor();
+	}
 	console.log([id, txt, word, rpl]);
+
+	window.postMessage({type: 'gtdp-goto-par', id}, '*');
+
+	let par = $('[data-gtid="'+id+'"]');
+	let line = par.find('.kix-lineview').get(0);
+	//setTimeout(() => { ggl_cursorToLine(line); }, 100);
 }
 
 /* exported ggl_prepareTexts */
@@ -65,71 +122,27 @@ function ggl_getTextOrElement() {
 		ss.push(this.getBoundingClientRect());
 	});
 
+	let ps = $('.kix-paragraphrenderer').get();
 	if (!ss.length) {
-		rv.ggl.elems = $('.kix-paragraphrenderer').get();
+		// If there are no selections, use all paragraphs
+		rv.ggl.elems = ps;
 		return rv;
 	}
 
-	// ToDo: Select whole paragraph if any part is selected
-	$('.kix-paragraphrenderer').each(function() {
-		let tsel = '';
-		$(this).find('.kix-wordhtmlgenerator-word-node').each(function() {
-			let tline = '';
-			for (let i=0 ; i<ss.length ; ++i) {
-				// Skip selection if no words in this line were selected
-				if (!rects_overlap(ss[i], this.getBoundingClientRect())) {
-					continue;
-				}
-
-				// Wrap each word in a span that we can further check overlap of
-				let span = $(this).find('.goog-inline-block').get(0).outerHTML;
-				$(this).find('.goog-inline-block').remove();
-				this.innerHTML = this.innerHTML.replace(/<[^<>]+>/g, '').replace(/([^\u200b\s]+)/g, '<span class="gtdp-word">$1</span>') + span;
-				//console.log([ss[i], this]);
-
-				$(this).find('.gtdp-word').each(function() {
-					// Skip whole word if no letters in this word were selected
-					if (!rects_overlap(ss[i], this.getBoundingClientRect())) {
-						// Wipe our handle to the word so we know it's not active
-						$(this).replaceWith(escHTML(this.textContent));
-						return;
-					}
-					// If any letter was selected, append the whole word
-					tline += this.textContent + ' ';
-				});
-				this.normalize();
+	for (let i=0 ; i<ps.length ; ++i) {
+		let found = false;
+		for (let k=0 ; k<ss.length ; ++k) {
+			if (!rects_overlap(ss[k], ps[i].getBoundingClientRect())) {
+				continue;
 			}
-			if (tline.length) {
-				tsel += tline;
-			}
-		});
-
-		tsel = $.trim(tsel.replace(/\u200b+/g, '').replace(/\u00a0+/g, ' ').replace(/  +/g, ' ').replace(/\n\n+/g, '\n\n'));
-		if (tsel.length === 0) {
-			return;
+			rv.ggl.elems.push(ps[i]);
+			found = true;
 		}
-		if (rv.t) {
-			rv.t += tsel + '\n\n';
-			return;
+		// If we have found any matches before this failure, we've gone beyond possible range and can just stop searching
+		if (!found && rv.ggl.elems.length) {
+			break;
 		}
-
-		let ptxt = $.trim(this.textContent.replace(/\u200b+/g, '').replace(/\u00a0+/g, ' ').replace(/  +/g, ' ').replace(/\n\n+/g, '\n\n'));
-		console.log([this, tsel, ptxt]);
-		if (tsel === ptxt) {
-			$(this).find('.gtdp-word').each(function() {
-				$(this).replaceWith(this.textContent);
-			});
-			this.normalize();
-			rv.ggl.elems.push(this);
-		}
-		else {
-			rv.t = '';
-			for (let i=0 ; i<rv.ggl.elems.length ; ++i) {
-				rv.t += rv.ggl.elems[i].textContent + '\n\n';
-			}
-			rv.t += tsel + '\n\n';
-		}
-	});
+	}
 
 	return rv;
 }

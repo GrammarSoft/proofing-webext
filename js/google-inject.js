@@ -5,6 +5,9 @@
  * Frontend by Tino Didriksen <mail@tinodidriksen.com>
  */
 'use strict';
+/* globals ggl_getCursor */
+/* globals rects_overlap */
+/* globals escapeRegExpTokens */
 
 // Event handlers
 let ehs = {keypress: [], keydown: []};
@@ -49,7 +52,7 @@ function dispatchKeyEvent(e) {
 	}
 }
 
-function handleKeyMessage(e) {
+function handleKey(e) {
 	if ('preventDefault' in e) {
 		e.preventDefault();
 	}

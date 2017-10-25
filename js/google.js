@@ -8,6 +8,7 @@
 /* globals Defs */
 /* globals context */
 /* globals getVisibleText */
+/* globals ggl_getCursor */
 /* globals rects_overlap */
 
 /* exported ggl_replaceInContext */

@@ -21,6 +21,10 @@
 		"message": "Genoptag skrivning"
 	},
 
+	"errNoText": {
+		"description": "No text selected or active",
+		"message": "Der var ikke noget valgt tekst eller markøren var ikke i et redigerbart felt."
+	},
 	"errReplacePar": {
 		"description": "Paragraph couldn't be found",
 		"message": "Kunne ikke finde paragrafen der skulle ændres i dokumentet. Kan være der er lavet ændringer siden checket startede."

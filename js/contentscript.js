@@ -645,6 +645,10 @@ function sendTexts() {
 }
 
 function cleanContext() {
+	if (!context.e) {
+		return;
+	}
+
 	let b = $(context.e).closest('body');
 
 	// Google Docs, if there was a selection
@@ -679,6 +683,10 @@ function cleanContext() {
 }
 
 function prepareTexts() {
+	if (!context.e) {
+		return;
+	}
+
 	cleanContext();
 
 	let to_send = [];
@@ -893,6 +901,11 @@ function checkActiveElement() {
 	to_send = prepareTexts();
 	to_send_i = 0;
 	console.log(to_send);
+
+	if (!to_send || to_send.length == 0) {
+		alert(chrome.i18n.getMessage('errNoText'));
+		return;
+	}
 	sendTexts();
 }
 

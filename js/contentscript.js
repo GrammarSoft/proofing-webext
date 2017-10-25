@@ -449,10 +449,8 @@ function _parseResult(rv) {
 		return;
 	}
 
-	floater = $.featherlight.current().$content.get(0);
-	if (floater.hasAttribute('src')) {
-		floater.removeAttribute('src');
-		floater.srcdoc = '<!DOCTYPE html><html><head><meta charset="UTF-8"><link href="chrome-extension://'+chrome.i18n.getMessage('@@extension_id')+'/vendor/bootstrap.min.css" rel="stylesheet" type="text/css"><link href="chrome-extension://'+chrome.i18n.getMessage('@@extension_id')+'/css/inline.css" rel="stylesheet" type="text/css"></head><body><div id="result"></div></body></html>';
+	if (!floater) {
+		floaterSetup();
 	}
 
 	let rs = '';
@@ -597,19 +595,21 @@ function _parseResult(rv) {
 					rs += ' ';
 				}
 				space = 0;
-				rs += '<span class="word">'+w[0]+'</span>';
+				rs += '<span class="word">'+escHTML(w[0])+'</span>';
 			}
 		}
 		rs += '</p>';
 	}
 
-	setTimeout(() => {
+	if (!floater_doc) {
 		floater_doc = floater.contentWindow.document;
-		floater_doc.getElementById('result').innerHTML += rs;
-		$(floater_doc).find('span.marking').off().click(markingClick);
-		sendTexts();
-		console.log([floater, floater_doc, rv, rs]);
-	}, 100);
+		$(floater_doc).find('#btn-close').off().click(() => {
+			$.featherlight.close();
+		});
+	}
+	floater_doc.getElementById('result').innerHTML += rs;
+	$(floater_doc).find('span.marking').off().click(markingClick);
+	sendTexts();
 }
 
 function parseResult(rv) {
@@ -843,6 +843,20 @@ function getTextOrElement() {
 	return rv;
 }
 
+function floaterSetup() {
+	floater = $.featherlight.current().$content.get(0);
+	floater.removeAttribute('src');
+	floater.srcdoc = '<!DOCTYPE html><html><head><meta charset="UTF-8">'+
+		'<link href="chrome-extension://'+chrome.i18n.getMessage('@@extension_id')+'/vendor/bootstrap.min.css" rel="stylesheet" type="text/css">'+
+		'<link href="chrome-extension://'+chrome.i18n.getMessage('@@extension_id')+'/css/inline.css" rel="stylesheet" type="text/css">'+
+		'</head><body>'+
+		'<div id="buttons">'+
+		'<span class="button button-blue" id="btn-correct-all"><span class="icon icon-approve-all"></span><span class="text">'+chrome.i18n.getMessage('btnApproveYellows')+'</span></span>'+
+		'<span class="button button-blue" id="btn-close"><span class="icon icon-ignore"></span><span class="text">'+chrome.i18n.getMessage('btnCloseFloater')+'</span></span>'+
+		'</div><hr><div id="result"></div>'+
+		'</body></html>';
+}
+
 /* exported checkActiveElement */
 function checkActiveElement() {
 	if ($.featherlight.current()) {
@@ -855,21 +869,12 @@ function checkActiveElement() {
 		console.log(g_conf);
 	});
 
-	if (false) {
-		let d = $('body').find('div');
-		d.attr('data-gtid', 's1');
-		context = {
-			e: d.get(0),
-			t: null,
-		};
-		replaceInContext('s1', 'De malede ', 'husen', '123456');
-		return;
-	}
-
 	context = getTextOrElement();
 	console.log(context);
 
 	// Cannot open Featherlight before getTextOrElement(), as that messes with activeElement
+	floater = null;
+	floater_doc = null;
 	$.featherlight({
 		iframe: 'about:blank',
 		iframeWidth: 800,
@@ -879,6 +884,9 @@ function checkActiveElement() {
 		iframeMaxWidth: '80%',
 		iframeMaxHeight: '80%',
 		namespace: 'gt-popup',
+		openSpeed: 1,
+		closeSpeed: 1,
+		afterContent: floaterSetup,
 		beforeClose: cleanContext,
 	});
 

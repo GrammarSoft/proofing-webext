@@ -167,7 +167,7 @@ function handleReplace(e) {
 	// Determine whether and where to work
 	let good = false;
 	if (e.txt.length) {
-		let rx = new RegExp('^('+escapeRegExpTokens(e.txt)+'\\s*)'+escapeRegExpTokens(e.word));
+		let rx = new RegExp('^('+e.txt.replace(/[^\d\wa-zA-ZéÉöÖæÆøØåÅ.,?!;:]+/ig, '.*?')+'\\s*)'+escapeRegExpTokens(e.word));
 		let m = rx.exec(tc);
 		if (m) {
 			good = true;

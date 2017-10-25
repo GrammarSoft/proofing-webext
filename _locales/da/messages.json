@@ -12,6 +12,15 @@
 		"message": "Check grammatik"
 	},
 
+	"btnApproveYellows": {
+		"description": "Approve all yellow markings",
+		"message": "Godkend alle gule"
+	},
+	"btnCloseFloater": {
+		"description": "Stops checking and closes the floater",
+		"message": "Genoptag skrivning"
+	},
+
 	"errReplacePar": {
 		"description": "Paragraph couldn't be found",
 		"message": "Kunne ikke finde paragrafen der skulle ændres i dokumentet. Kan være der er lavet ændringer siden checket startede."

@@ -7,9 +7,13 @@
 'use strict';
 /* globals Defs */
 /* globals context */
+/* globals checkActiveElement */
 /* globals getVisibleText */
 /* globals ggl_getCursor */
+/* globals ggl_loaded:true */
 /* globals rects_overlaps */
+
+/* exported ggl_loaded */
 
 /* exported ggl_replaceInContext */
 function ggl_replaceInContext(id, txt, word, rpl) {
@@ -116,16 +120,26 @@ function ggl_replaceResult(e) {
 	}
 }
 
+function ggl_checkLoaded(e) {
+	if ('preventDefault' in e) {
+		e.preventDefault();
+	}
+	e = e.data;
+
+	ggl_loaded = true;
+	checkActiveElement(e.mode);
+}
+
 /* exported ggl_handleMessage */
 function ggl_handleMessage(e) {
 	if (!e.data.hasOwnProperty('type')) {
 		return;
 	}
 
-	console.log(e.data);
-
 	switch (e.data.type) {
 	case 'gtdp-replace-result':
 		return ggl_replaceResult(e);
+	case 'gtdp-check-loaded':
+		return ggl_checkLoaded(e);
 	}
 }

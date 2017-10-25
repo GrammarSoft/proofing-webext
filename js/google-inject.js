@@ -15,6 +15,7 @@ let iframe = null;
 
 const KeyCode = {
 	backspace: 8,
+	end: 35,
 	home: 36,
 	left: 37,
 	up: 38,
@@ -86,6 +87,25 @@ function handleKey(e) {
 	}
 
 	dispatchKeyEvent(e);
+}
+
+function handleCheckLoad(e) {
+	if ('preventDefault' in e) {
+		e.preventDefault();
+	}
+	e = e.data;
+	e.type = 'gtdp-check-loaded';
+
+	// Scroll all the way down
+	dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.end, ctrlKey: true}});
+
+	setTimeout(() => {
+		// Scroll all the way up
+		dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.home, ctrlKey: true}});
+		setTimeout(() => {
+			window.postMessage(e, '*');
+		}, 250);
+	}, 250);
 }
 
 function handleReplace(e) {
@@ -230,6 +250,8 @@ function handleMessage(e) {
 	switch (e.data.type) {
 	case 'gtdp-key':
 		return handleKey(e);
+	case 'gtdp-check-load':
+		return handleCheckLoad(e);
 	case 'gtdp-replace':
 		return handleReplace(e);
 	}

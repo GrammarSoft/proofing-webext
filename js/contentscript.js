@@ -40,6 +40,7 @@ let to_send_i = 0;
 let ts_xhr = null;
 let ts_slow = null;
 let ts_fail = 0;
+let ggl_loaded = false;
 
 function isInDictionary(e) {
 	return false;
@@ -68,7 +69,7 @@ function addToDictionary() {
 }
 
 function markingPopup(c, exp) {
-	let p = $(c).closest('body');
+	let p = $(c).closest('html');
 	p.find('span.marking').popover('dispose').removeClass('marking-selected');
 	p.find('.popover').remove();
 
@@ -176,7 +177,7 @@ function markingInputOne() {
 }
 
 function markingInputAll() {
-	let p = $(this).closest('body');
+	let p = $(this).closest('html');
 	let cm = cmarking;
 	let word = cm.text();
 	let types = cm.attr('data-types');
@@ -197,7 +198,7 @@ function markingInputAll() {
 }
 
 function markingInput() {
-	let p = $(this).closest('body');
+	let p = $(this).closest('html');
 	p.find('span.marking').popover('dispose').removeClass('marking-selected');
 	p.find('.popover').remove();
 
@@ -649,7 +650,7 @@ function cleanContext() {
 		return;
 	}
 
-	let b = $(context.e).closest('body');
+	let b = $(context.e).closest('html');
 
 	// Google Docs, if there was a selection
 	let ps = b.find('span.gtdp-word').parent();
@@ -866,6 +867,11 @@ function floaterSetup() {
 }
 
 function checkActiveElement(mode) {
+	if (mode === 'all' && $('.docs-texteventtarget-iframe').length && !ggl_loaded) {
+		window.postMessage({type: 'gtdp-check-load', mode}, '*');
+		return;
+	}
+
 	if ($.featherlight.current()) {
 		$.featherlight.close();
 	}
@@ -912,7 +918,7 @@ function checkAll() {
 	checkActiveElement('all');
 }
 
-/* exported checkCursor */
+/* exported checkSmart */
 function checkSmart() {
 	checkActiveElement('smart');
 }

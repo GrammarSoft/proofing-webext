@@ -4,3 +4,8 @@
  * Linguistic backend by Eckhard Bick <eckhard.bick@gmail.com>
  * Frontend by Tino Didriksen <mail@tinodidriksen.com>
  */
+
+.row {
+	margin-top: 5px;
+	margin-bottom: 5px;
+}

@@ -6,7 +6,7 @@
  */
 'use strict';
 /* globals ggl_getCursor */
-/* globals rects_overlap */
+/* globals rects_overlaps */
 /* globals escapeRegExpTokens */
 
 // Event handlers
@@ -118,7 +118,7 @@ function handleReplace(e) {
 
 	// Binary search
 	let repeat = 1024;
-	if (rects_overlap(curp, tgtp)) {
+	if (rects_overlaps(curp, tgtp)) {
 		repeat = Math.ceil(Math.max(tc.length / 2, 32));
 	}
 

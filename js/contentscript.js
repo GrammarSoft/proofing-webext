@@ -783,14 +783,14 @@ function prepareTexts() {
 	return to_send;
 }
 
-function getTextOrElement() {
+function getTextOrElement(mode) {
 	let rv = {e: null, t: null, ggl: null};
 	let s = window.getSelection();
 	let e = document.activeElement;
 	let w = window;
 
 	if ($('.docs-texteventtarget-iframe').length) {
-		return ggl_getTextOrElement();
+		return ggl_getTextOrElement(mode);
 	}
 
 	if (e && e.tagName !== 'BODY') {
@@ -865,11 +865,9 @@ function floaterSetup() {
 		'</body></html>';
 }
 
-/* exported checkActiveElement */
-function checkActiveElement() {
+function checkActiveElement(mode) {
 	if ($.featherlight.current()) {
 		$.featherlight.close();
-		return;
 	}
 
 	chrome.storage.sync.get(g_conf_defaults, (items) => {
@@ -877,7 +875,7 @@ function checkActiveElement() {
 		console.log(g_conf);
 	});
 
-	context = getTextOrElement();
+	context = getTextOrElement(mode);
 	console.log(context);
 
 	// Cannot open Featherlight before getTextOrElement(), as that messes with activeElement
@@ -907,6 +905,26 @@ function checkActiveElement() {
 		return;
 	}
 	sendTexts();
+}
+
+/* exported checkAll */
+function checkAll() {
+	checkActiveElement('all');
+}
+
+/* exported checkCursor */
+function checkSmart() {
+	checkActiveElement('smart');
+}
+
+/* exported checkCursor */
+function checkCursor() {
+	checkActiveElement('cursor');
+}
+
+/* exported checkSelected */
+function checkSelected() {
+	checkActiveElement('selected');
 }
 
 // If on Google Docs, inject script into page context to allow communication with keyboard event handlers

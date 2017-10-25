@@ -17,9 +17,10 @@ function ggl_getCursor() {
 	return null;
 }
 
-/* exported rects_overlap */
-function rects_overlap(ra, rb) {
-	return ra.left <= rb.right && ra.right >= rb.left && ra.top <= rb.bottom && ra.bottom >= rb.top;
+/* exported rects_overlaps */
+// If this was <= and >= then it would test merely touching, but we want actual overlap
+function rects_overlaps(ra, rb) {
+	return ra.left < rb.right && ra.right > rb.left && ra.top < rb.bottom && ra.bottom > rb.top;
 }
 
 // From https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions

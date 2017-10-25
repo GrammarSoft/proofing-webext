@@ -9,7 +9,7 @@
 /* globals context */
 /* globals getVisibleText */
 /* globals ggl_getCursor */
-/* globals rects_overlap */
+/* globals rects_overlaps */
 
 /* exported ggl_replaceInContext */
 function ggl_replaceInContext(id, txt, word, rpl) {
@@ -22,6 +22,9 @@ function ggl_prepareTexts() {
 
 	let text = '';
 	for (let i=0 ; i<context.ggl.elems.length ; ++i) {
+		if (context.ggl.elems[i].hasAttribute('data-gtid')) {
+			continue;
+		}
 		context.ggl.elems[i].normalize();
 		let ptxt = getVisibleText(context.ggl.elems[i]);
 		ptxt = $.trim(ptxt.replace(/\u200b/g, '').replace(/\u00a0/g, ' ').replace(/  +/g, ' '));
@@ -44,16 +47,24 @@ function ggl_prepareTexts() {
 }
 
 /* exported ggl_getTextOrElement */
-function ggl_getTextOrElement() {
+function ggl_getTextOrElement(mode) {
 	let rv = {e: null, t: null, ggl: null};
 
 	rv.e = $('body').get(0);
 	rv.ggl = {elems: [], cursor: ggl_getCursor()};
 
 	let ss = [];
-	$('.kix-selection-overlay').each(function() {
-		ss.push(this.getBoundingClientRect());
-	});
+	if (mode === 'smart' || mode === 'selected') {
+		$('.kix-selection-overlay').each(function() {
+			ss.push(this.getBoundingClientRect());
+		});
+	}
+	if (!ss.length && mode === 'smart') {
+		mode = 'cursor';
+	}
+	if (mode === 'cursor') {
+		ss.push(rv.ggl.cursor.getBoundingClientRect());
+	}
 
 	let ps = $('.kix-paragraphrenderer').get();
 	if (!ss.length) {
@@ -65,14 +76,22 @@ function ggl_getTextOrElement() {
 	for (let i=0 ; i<ps.length ; ++i) {
 		let found = false;
 		for (let k=0 ; k<ss.length ; ++k) {
-			if (!rects_overlap(ss[k], ps[i].getBoundingClientRect())) {
+			if (!rects_overlaps(ss[k], ps[i].getBoundingClientRect())) {
 				continue;
 			}
-			rv.ggl.elems.push(ps[i]);
+			if (rv.ggl.elems.length === 0 || rv.ggl.elems[rv.ggl.elems.length-1] != ps[i]) {
+				rv.ggl.elems.push(ps[i]);
+			}
 			found = true;
 		}
 		// If we have found any matches before this failure, we've gone beyond possible range and can just stop searching
 		if (!found && rv.ggl.elems.length) {
+			// If we're in cursor mode, append all remaining paragraphs
+			if (mode === 'cursor') {
+				for (++i ; i<ps.length ; ++i) {
+					rv.ggl.elems.push(ps[i]);
+				}
+			}
 			break;
 		}
 	}

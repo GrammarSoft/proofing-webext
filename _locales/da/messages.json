@@ -12,6 +12,22 @@
 		"message": "Check grammatik"
 	},
 
+	"btnCheckAll": {
+		"description": "Check the whole document from the top",
+		"message": "Check hele dokumentet"
+	},
+	"btnCheckSmart": {
+		"description": "Check from cursor or selection",
+		"message": "Check fra markøren / valgte tekst"
+	},
+	"btnCheckCursor": {
+		"description": "Check the document from cursor onwards",
+		"message": "Check fra markøren"
+	},
+	"btnCheckSelected": {
+		"description": "Check the selected paragraphs",
+		"message": "Check det valgte"
+	},
 	"btnApproveYellows": {
 		"description": "Approve all yellow markings",
 		"message": "Godkend alle gule"

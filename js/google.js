@@ -79,3 +79,34 @@ function ggl_getTextOrElement() {
 
 	return rv;
 }
+
+function ggl_replaceResult(e) {
+	if ('preventDefault' in e) {
+		e.preventDefault();
+	}
+	e = e.data;
+
+	if (e.success) {
+		if (context && context.replace) {
+			context.replace();
+			context.replace = null;
+		}
+	}
+	else {
+		alert(chrome.i18n.getMessage(e.why));
+	}
+}
+
+/* exported ggl_handleMessage */
+function ggl_handleMessage(e) {
+	if (!e.data.hasOwnProperty('type')) {
+		return;
+	}
+
+	console.log(e.data);
+
+	switch (e.data.type) {
+	case 'gtdp-replace-result':
+		return ggl_replaceResult(e);
+	}
+}

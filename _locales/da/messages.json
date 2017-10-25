@@ -11,6 +11,16 @@
 		"description": "Extension icon tooltip",
 		"message": "Check grammatik"
 	},
+
+	"errReplacePar": {
+		"description": "Paragraph couldn't be found",
+		"message": "Kunne ikke finde paragrafen der skulle ændres i dokumentet. Kan være der er lavet ændringer siden checket startede."
+	},
+	"errReplaceTxt": {
+		"description": "Text in the paragraph couldn't be found",
+		"message": "Kunne ikke finde teksten der skulle ændres i dokumentet. Kan være der er lavet ændringer siden checket startede."
+	},
+
 	"_trailing": {
 		"description": "",
 		"message": ""

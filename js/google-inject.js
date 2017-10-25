@@ -105,6 +105,7 @@ function handleReplace(e) {
 
 	if (!par) {
 		console.log('No such par: ' + e.id);
+		window.postMessage({type: 'gtdp-replace-result', success: false, why: 'errReplacePar'}, '*');
 		return;
 	}
 
@@ -121,7 +122,7 @@ function handleReplace(e) {
 		repeat = Math.ceil(Math.max(tc.length / 2, 32));
 	}
 
-	// ToDo: Make this a plain while() loop
+	// ToDo: Make this a plain while() loop?
 	for (let i=0 ; i<10240 ; ++i) {
 		if (curp.top - tgtp.top < -2) {
 			console.log(`Down ${repeat} to the right`);
@@ -185,8 +186,8 @@ function handleReplace(e) {
 	}
 
 	if (!good) {
-		// ToDo: Send message back to extension about failure
 		console.log('Could not locate prefix and/or word in paragraph');
+		window.postMessage({type: 'gtdp-replace-result', success: false, why: 'errReplaceTxt'}, '*');
 		return;
 	}
 
@@ -218,7 +219,7 @@ function handleReplace(e) {
 			dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.delete}});
 		}
 	}
-	// ToDo: Send message back to extension about success
+	window.postMessage({type: 'gtdp-replace-result', success: true}, '*');
 }
 
 function handleMessage(e) {

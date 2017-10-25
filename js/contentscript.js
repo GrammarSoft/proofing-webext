@@ -15,6 +15,7 @@
 /* globals getNontextParent */
 /* globals getVisibleStyledText */
 /* globals getVisibleText */
+/* globals ggl_handleMessage */
 /* globals ggl_getTextOrElement */
 /* globals ggl_replaceInContext */
 /* globals ggl_prepareTexts */
@@ -300,7 +301,8 @@ function replaceInContext(id, txt, word, rpl) {
 	txt = $.trim(txt);
 
 	if (context.ggl) {
-		return ggl_replaceInContext(id, txt, word, rpl);
+		ggl_replaceInContext(id, txt, word, rpl);
+		return true;
 	}
 
 	if (context.e.tagName === 'INPUT' || context.e.tagName === 'TEXTAREA') {
@@ -311,7 +313,7 @@ function replaceInContext(id, txt, word, rpl) {
 		let nt = ot.replace(new RegExp(escapeRegExpTokens(txt)+'(\\s*)'+escapeRegExpTokens(word)), txt+'$1'+rpl);
 		context.e.value = context.e.value.replace(ot, nt);
 		console.log([ot, nt, txt, word, rpl]);
-		return;
+		return false;
 	}
 
 	let p = $(context.e).parent().find('[data-gtid="'+id+'"]');
@@ -321,6 +323,8 @@ function replaceInContext(id, txt, word, rpl) {
 	let tns = findVisibleTextNodes(p);
 	replaceInTextNodes(tns, txt, word, rpl);
 	p.normalize();
+
+	return false;
 }
 
 function markingDo(word, rpl) {
@@ -341,6 +345,7 @@ function markingDo(word, rpl) {
 		}
 	}
 
+	let delay = false;
 	if (!context.t && word !== rpl) {
 		let par = cmarking.closest('p').get(0);
 		let txt = '';
@@ -353,22 +358,28 @@ function markingDo(word, rpl) {
 			}
 			txt += par.childNodes[i].textContent;
 		}
-		replaceInContext(par.getAttribute('id'), txt, word, rpl);
+		delay = replaceInContext(par.getAttribute('id'), txt, word, rpl);
 	}
 
-	// ToDo: escHTML() ?
-	cmarking.replaceWith(rpl);
-	cmarking = null;
+	context.replace = () => {
+		// ToDo: escHTML() ?
+		cmarking.replaceWith(rpl);
+		cmarking = null;
 
-	markings = p.find('span.marking');
-	if (markings.length == 0) {
-		$('#btn-correct-all,#btn-wrong-all,#btn-close').addClass('disabled');
-	}
-	else {
-		if (c >= markings.length) {
-			--c;
+		markings = p.find('span.marking');
+		if (markings.length == 0) {
+			$('#btn-correct-all,#btn-wrong-all,#btn-close').addClass('disabled');
 		}
-		markings.eq(c).click();
+		else {
+			if (c >= markings.length) {
+				--c;
+			}
+			markings.eq(c).click();
+		}
+	};
+	if (!delay) {
+		context.replace();
+		context.replace = null;
 	}
 }
 
@@ -890,4 +901,6 @@ setTimeout(() => {
 	script = document.createElement('script');
 	script.src = chrome.extension.getURL('js/google-inject.js');
 	document.body.appendChild(script);
+
+	window.addEventListener('message', ggl_handleMessage);
 }, 750);

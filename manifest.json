@@ -52,6 +52,7 @@
 				"vendor/popper.min.js",
 				"vendor/bootstrap.min.js",
 				"js/mark-types.js",
+				"js/shared-inject.js",
 				"js/shared.js",
 				"js/contentscript.js"
 			]

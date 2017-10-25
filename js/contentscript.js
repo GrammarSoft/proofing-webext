@@ -884,6 +884,10 @@ setTimeout(() => {
 	}
 
 	let script = document.createElement('script');
+	script.src = chrome.extension.getURL('js/shared-inject.js');
+	document.body.appendChild(script);
+
+	script = document.createElement('script');
 	script.src = chrome.extension.getURL('js/google-inject.js');
 	document.body.appendChild(script);
 }, 750);

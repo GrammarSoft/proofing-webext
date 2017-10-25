@@ -10,77 +10,9 @@
 /* globals getVisibleText */
 /* globals rects_overlap */
 
-const Keys = {
-	backspace: 8,
-	home: 36,
-	left: 37,
-	up: 38,
-	right: 39,
-	down: 40,
-	delete: 46,
-};
-
-function ggl_getCursor() {
-	let cs = $('.kix-cursor').get();
-	for (let i=0 ; i<cs.length ; ++i) {
-		if ($.trim(cs[i].textContent).length == 0) {
-			return $(cs[i]).find('.kix-cursor-caret').get(0);
-		}
-	}
-	return null;
-}
-
-function ggl_cursorToLine_left(line) {
-	let cb = context.cursor.getBoundingClientRect();
-	let lb = line.getBoundingClientRect();
-	if (cb.top > lb.top) {
-		console.log(['Left', cb.top, lb.bottom]);
-		window.postMessage({type: 'gtdp-key', etype: 'keydown', event: {keyCode: Keys.left}}, '*');
-		setTimeout(() => { ggl_cursorToLine_left(line); }, 1);
-	}
-	else {
-		console.log('Left -> Right');
-		window.postMessage({type: 'gtdp-key', etype: 'keydown', event: {keyCode: Keys.right}}, '*');
-	}
-}
-
-function ggl_cursorToLine_right(line) {
-	let cb = context.cursor.getBoundingClientRect();
-	let lb = line.getBoundingClientRect();
-	if (cb.top < lb.bottom) {
-		console.log(['Right', cb.top, lb.bottom]);
-		window.postMessage({type: 'gtdp-key', etype: 'keydown', event: {keyCode: Keys.right}, repeat: 50}, '*');
-		setTimeout(() => { ggl_cursorToLine_right(line); }, 1);
-	}
-	else {
-		console.log('Right -> Left');
-		setTimeout(() => { ggl_cursorToLine_left(line); }, 1);
-	}
-}
-
-function ggl_cursorToLine(line) {
-	let cb = context.cursor.getBoundingClientRect();
-	let lb = line.getBoundingClientRect();
-	if (cb.top < lb.bottom) {
-		setTimeout(() => { ggl_cursorToLine_right(line); }, 1);
-	}
-	else {
-		setTimeout(() => { ggl_cursorToLine_left(line); }, 1);
-	}
-}
-
 /* exported ggl_replaceInContext */
 function ggl_replaceInContext(id, txt, word, rpl) {
-	if (!context.hasOwnProperty('cursor') || !context.cursor) {
-		context.cursor = ggl_getCursor();
-	}
-	console.log([id, txt, word, rpl]);
-
-	window.postMessage({type: 'gtdp-goto-par', id}, '*');
-
-	let par = $('[data-gtid="'+id+'"]');
-	let line = par.find('.kix-lineview').get(0);
-	//setTimeout(() => { ggl_cursorToLine(line); }, 100);
+	window.postMessage({type: 'gtdp-replace', id, txt, word, rpl}, '*');
 }
 
 /* exported ggl_prepareTexts */

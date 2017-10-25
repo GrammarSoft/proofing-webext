@@ -864,6 +864,11 @@ function floaterSetup() {
 		'<span class="button button-blue" id="btn-close"><span class="icon icon-ignore"></span><span class="text">'+chrome.i18n.getMessage('btnCloseFloater')+'</span></span>'+
 		'</div><hr><div id="result"></div>'+
 		'</body></html>';
+
+	// ToDo: Make this part of a deployment script
+	if (navigator.userAgent.indexOf('Firefox') !== -1) {
+		floater.srcdoc = floater.srcdoc.replace(/chrome-extension:/g, 'moz-extension:');
+	}
 }
 
 function checkActiveElement(mode) {
@@ -877,8 +882,10 @@ function checkActiveElement(mode) {
 	}
 
 	chrome.storage.sync.get(g_conf_defaults, (items) => {
-		g_conf = items;
-		console.log(g_conf);
+		for (let i in items) {
+			g_conf[i] = items[i];
+		}
+		console.log([items, g_conf]);
 	});
 
 	context = getTextOrElement(mode);

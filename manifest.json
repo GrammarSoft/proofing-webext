@@ -19,6 +19,9 @@
 	},
 	"incognito": "spanning",
 	"permissions": [
+		"https://gramtrans.com/*",
+		"https://retmig.dk/*",
+		"https://kommaer.dk/*",
 		"activeTab",
 		"storage"
 	],

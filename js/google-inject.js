@@ -105,97 +105,117 @@ function handleReplace(e) {
 		return;
 	}
 
-	let innerHTML = par.innerHTML;
+	let tc = par.textContent.replace(/\u200b/g, '');
 
-	// Insert a target node where we want the cursor to go
-	let tns = findVisibleTextNodes(par);
-	replaceInTextNodes(tns, e.txt, e.word, '\ue112'.repeat(e.word.length));
-	for (let i=0 ; i<tns.length ; ++i) {
-		tns[i].textContent = '\u200b' + tns[i].textContent.replace(/ /g, '\u200b \u200b') + '\u200b';
-	}
-
-	par.innerHTML = par.innerHTML.replace('\ue112', '<span id="gtdp-cursor">\ue112</span>');
-
-	// Move the cursor to the target word
+	// Move the cursor to the target paragraph
 	let cur = ggl_getCursor();
-	let tgt = document.getElementById('gtdp-cursor');
 	let curp = cur.getBoundingClientRect();
-	let tgtp = tgt.getBoundingClientRect();
+	let tgtp = par.getBoundingClientRect();
 
 	// Binary search
 	let repeat = 1024;
+	if (rects_overlap(curp, tgtp)) {
+		repeat = Math.ceil(Math.max(tc.length / 2, 32));
+	}
+
 	// ToDo: Make this a plain while() loop
-	for (let i=0 ; i<512 && !rects_overlap(curp, tgtp) ; ++i) {
-		if (curp.bottom < tgtp.top) {
+	for (let i=0 ; i<10240 ; ++i) {
+		if (curp.top - tgtp.top < -2) {
 			console.log(`Down ${repeat} to the right`);
 			dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.right}, repeat});
 
 			curp = cur.getBoundingClientRect();
-			if (curp.top > tgtp.bottom) {
+			if (curp.top - tgtp.top > 2) {
 				repeat /= 2;
 			}
 		}
-		else if (curp.top > tgtp.bottom) {
+		else if (curp.top - tgtp.top > 2) {
 			console.log(`Up ${repeat} to the left`);
 			dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.left}, repeat});
 
 			curp = cur.getBoundingClientRect();
-			if (curp.bottom < tgtp.top) {
+			if (curp.top - tgtp.top < -2) {
 				repeat /= 2;
 			}
 		}
-		else if (curp.left < tgtp.left) {
+		else if (curp.left - tgtp.left < -2) {
 			console.log(`Forward ${repeat} to the right`);
 			dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.right}, repeat});
 
 			curp = cur.getBoundingClientRect();
-			if (curp.right > tgtp.right || curp.top > tgtp.bottom) {
+			if (curp.left - tgtp.left > 2 || curp.top - tgtp.top > 2) {
 				repeat /= 2;
 			}
 		}
-		else if (curp.right > tgtp.right) {
+		else if (curp.left - tgtp.left > 2) {
 			console.log(`Back ${repeat} to the left`);
 			dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.left}, repeat});
 
 			curp = cur.getBoundingClientRect();
-			if (curp.left < tgtp.left || curp.bottom < tgtp.top) {
+			if (curp.left - tgtp.left < -2 || curp.top - tgtp.top < -2) {
 				repeat /= 2;
 			}
 		}
 
-		repeat = Math.max(repeat, 1);
+		repeat = Math.floor(Math.max(repeat, 1));
 	}
-	// Make sure we're at the start of the word
-	while (curp.left > tgtp.left) {
-		console.log('Single step to the left');
+
+	// Determine whether and where to work
+	let good = false;
+	if (e.txt.length) {
+		let rx = new RegExp('^('+escapeRegExpTokens(e.txt)+'\\s*)'+escapeRegExpTokens(e.word));
+		let m = rx.exec(tc);
+		if (m) {
+			good = true;
+			console.log(`Step ${m[1].length} right`);
+			dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.right}, repeat: m[1].length});
+		}
+	}
+	else {
+		let rx = new RegExp('^(\\s*)'+escapeRegExpTokens(e.word));
+		let m = rx.exec(tc);
+		if (m) {
+			good = true;
+			console.log(`Step ${m[1].length} right`);
+			dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.right}, repeat: m[1].length});
+		}
+	}
+
+	if (!good) {
+		// ToDo: Send message back to extension about failure
+		console.log('Could not locate prefix and/or word in paragraph');
+		return;
+	}
+
+	// Perform the actual replacement
+	let wi = 0;
+	for (; wi < e.word.length && wi < e.rpl.length ; ++wi) {
+		let event = {key: e.rpl.charAt(wi)};
+		event.which = event.charCode = event.key.charCodeAt(0);
+		console.log(`Inserting ${event.key}`);
+		// In order to preserve formatting, behold this mess:
+		dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.right}});
+		dispatchKeyEvent({etype: 'keypress', event});
 		dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.left}});
-		curp = cur.getBoundingClientRect();
+		dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.backspace}});
+		dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.right}});
 	}
-
-	par.innerHTML = innerHTML;
-
-	/*
-	setTimeout(() => {
-		let wi = 0;
-		for (; wi < e.word.length && wi < e.rpl.length ; ++wi) {
-			let event = {key: e.rpl.charAt(wi)};
-			event.which = event.charCode = event.key.charCodeAt(wi);
-			console.log(`Inserting ${event.key}`);
-			dispatchKeyEvent({etype: 'keypress', event});
-		}
-	}, 1);
-	//*/
-	/*
-	if (wi === word.length || wi === rpl.length) {
-		if (wi < rpl.length) {
-			ml = ml.substring(0, nsi) + rpl.substring(wi) + ml.substring(nsi);
-		}
-		if (wi < word.length) {
-			ml = ml.substring(0, nsi) + ml.substring(nsi + (word.length - wi));
-		}
-		done = true;
+	// Insert leftover characters
+	for (; wi < e.rpl.length ; ++wi) {
+		let event = {key: e.rpl.charAt(wi)};
+		event.which = event.charCode = event.key.charCodeAt(0);
+		console.log(`Inserting ${event.key}`);
+		dispatchKeyEvent({etype: 'keypress', event});
 	}
-	//*/
+	// Erase superfluous characters
+	if (wi < e.word.length) {
+		let we = e.word.length - wi;
+		console.log(`Erasing ${we} letters`);
+		for (let i=0 ; i< we ; ++i) {
+			dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.delete}});
+		}
+	}
+	// ToDo: Send message back to extension about success
 }
 
 function handleMessage(e) {

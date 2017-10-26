@@ -18,6 +18,11 @@
  */
 
 @media all {
+	.gt-popup {
+		/* Play nice with MV-Nordic's IntoWords */
+		z-index: 2147483639;
+	}
+
 	.gt-popup .gt-popup-content {
 		border-radius: 10px;
 	}

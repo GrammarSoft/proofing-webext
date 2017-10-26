@@ -37,6 +37,15 @@
 		"message": "Genoptag skrivning"
 	},
 
+	"msgNoMarkingsFound": {
+		"description": "Check is complete but no markings were raised",
+		"message": "Der blev ikke fundet noget at kritisere i teksten."
+	},
+	"msgNoMarkingsRemain": {
+		"description": "All markings were dealt with",
+		"message": "Der er ikke mere at rette i teksten."
+	},
+
 	"errNoText": {
 		"description": "No text selected or active",
 		"message": "Der var ikke noget valgt tekst eller markøren var ikke i et redigerbart felt."

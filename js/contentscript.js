@@ -84,6 +84,14 @@ function addToDictionary() {
 	log_click({'dict-add': word});
 }
 
+function msgNoMarkingsFound() {
+	alert(chrome.i18n.getMessage('msgNoMarkingsFound'));
+}
+
+function msgNoMarkingsRemain() {
+	alert(chrome.i18n.getMessage('msgNoMarkingsRemain'));
+}
+
 function markingPopup(c, exp) {
 	let p = $(c).closest('html');
 	p.find('span.marking').popover('dispose').removeClass('marking-selected');
@@ -386,6 +394,7 @@ function markingDo(word, rpl) {
 		markings = p.find('span.marking');
 		if (markings.length == 0) {
 			$('#btn-correct-all,#btn-wrong-all,#btn-close').addClass('disabled');
+			setTimeout(msgNoMarkingsRemain, 100);
 		}
 		else {
 			if (c >= markings.length) {
@@ -652,10 +661,14 @@ function _parseResult(rv) {
 		});
 	}
 	floater_doc.getElementById('result').innerHTML += rs;
-	$(floater_doc).find('span.marking').off().click(markingClick);
+	let ms = $(floater_doc).find('span.marking');
+	ms.off().click(markingClick);
 
 	if (to_send_i < to_send.length) {
 		sendTexts();
+	}
+	else if (ms.length == 0) {
+		setTimeout(msgNoMarkingsFound, 100);
 	}
 }
 
@@ -699,7 +712,6 @@ function sendTexts() {
 	else {
 		setTimeout(() => { parseResult({c:''}); }, 500);
 	}
-	// ToDo: Show popup if no errors were found
 }
 
 function cleanContext() {

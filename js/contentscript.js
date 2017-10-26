@@ -54,6 +54,7 @@ let ts_xhr = null;
 let ts_slow = null;
 let ts_fail = 0;
 let ggl_loaded = false;
+let ggl_cursor = null;
 
 function isInDictionary(e) {
 	return false;
@@ -885,9 +886,12 @@ function floaterSetup() {
 }
 
 function checkActiveElement(mode) {
-	if (mode === 'all' && $('.docs-texteventtarget-iframe').length && !ggl_loaded) {
-		window.postMessage({type: 'gtdp-check-load', mode}, '*');
-		return;
+	if (mode !== 'selected' && $('.docs-texteventtarget-iframe').length && !ggl_loaded) {
+		if (mode === 'all' || $('.kix-selection-overlay').length === 0) {
+			ggl_cursor = ggl_getCursor().getBoundingClientRect();
+			window.postMessage({type: 'gtdp-check-load', mode}, '*');
+			return;
+		}
 	}
 
 	if ($.featherlight.current()) {

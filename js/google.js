@@ -24,6 +24,7 @@
 /* globals getVisibleText */
 /* globals ggl_getCursor */
 /* globals ggl_loaded:true */
+/* globals ggl_cursor:true */
 /* globals rects_overlaps */
 
 /* exported ggl_loaded */
@@ -80,7 +81,12 @@ function ggl_getTextOrElement(mode) {
 		mode = 'cursor';
 	}
 	if (mode === 'cursor') {
-		ss.push(rv.ggl.cursor.getBoundingClientRect());
+		if (ggl_cursor) {
+			ss.push(ggl_cursor);
+		}
+		else {
+			ss.push(rv.ggl.cursor.getBoundingClientRect());
+		}
 	}
 
 	let ps = $('.kix-paragraphrenderer').get();
@@ -142,6 +148,7 @@ function ggl_checkLoaded(e) {
 
 	ggl_loaded = true;
 	checkActiveElement(e.mode);
+	ggl_cursor = null;
 }
 
 /* exported ggl_handleMessage */

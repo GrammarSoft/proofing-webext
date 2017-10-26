@@ -77,6 +77,7 @@ function ggl_getTextOrElement(mode) {
 		return rv;
 	}
 
+	// ToDo: Handle paragraphs that span page breaks
 	for (let i=0 ; i<ps.length ; ++i) {
 		let found = false;
 		for (let k=0 ; k<ss.length ; ++k) {

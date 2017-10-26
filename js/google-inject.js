@@ -185,6 +185,7 @@ function handleReplace(e) {
 	}
 
 	// Determine whether and where to work
+	// ToDo: Test surrogate pairs and combining marks in {txt, word, rpl}
 	let good = false;
 	if (e.txt.length) {
 		let rx = new RegExp('^('+e.txt.replace(/[^\d\wa-zA-ZéÉöÖæÆøØåÅ.,?!;:]+/ig, '.*?')+'\\s*)'+escapeRegExpTokens(e.word));

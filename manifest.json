@@ -51,7 +51,7 @@
 				"css/featherlight.css"
 			],
 			"js": [
-				"vendor/purify.min.js",
+				"vendor/murmurhash3js.min.js",
 				"vendor/jquery.min.js",
 				"vendor/featherlight.min.js",
 				"vendor/popper.min.js",

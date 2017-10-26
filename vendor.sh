@@ -5,7 +5,7 @@ set -e
 rm -rf vendor
 mkdir -pv vendor/
 cp -v node_modules/jquery/dist/jquery.min.js vendor/
-cp -v node_modules/dompurify/dist/purify.min.js vendor/
+cp -v node_modules/murmurhash3js/murmurhash3js.min.js vendor/
 cp -v node_modules/popper.js/dist/umd/popper.min.js vendor/
 cp -v node_modules/bootstrap/dist/css/bootstrap.min.css vendor/
 cp -v node_modules/bootstrap/dist/js/bootstrap.min.js vendor/

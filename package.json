@@ -4,10 +4,10 @@
 	"homepage": "https://retmig.dk/",
 	"license": "GPL-3.0+",
 	"dependencies": {
-		"dompurify": "^1.0.2",
+		"bootstrap": "^4.0.0-beta",
 		"featherlight": "^1.7.9",
 		"jquery": "^3.2.1",
-		"popper.js": "^1.11.1",
-		"bootstrap": "^4.0.0-beta"
+		"murmurhash3js": "^3.0.1",
+		"popper.js": "^1.11.1"
 	}
 }

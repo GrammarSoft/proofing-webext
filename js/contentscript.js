@@ -30,11 +30,13 @@
 /* globals getVisibleText */
 /* globals ggl_handleMessage */
 /* globals ggl_getTextOrElement */
+/* globals ggl_getCursor */
 /* globals ggl_replaceInContext */
 /* globals ggl_prepareTexts */
 /* globals is_upper */
 /* globals log_click */
 /* globals marking_types */
+/* globals murmurHash3 */
 /* globals replaceInTextNodes */
 /* globals sanitize_result */
 /* globals text_nodes */
@@ -56,6 +58,7 @@ let ts_xhr = null;
 let ts_slow = null;
 let ts_fail = 0;
 let ggl_loaded = false;
+/* exported ggl_cursor */
 let ggl_cursor = null;
 
 function isInDictionary(e) {
@@ -687,6 +690,10 @@ function sendTexts() {
 	for (to_send_b = to_send_i ; to_send_i < to_send.length ; ++to_send_i) {
 		let par = to_send[to_send_i];
 
+		if (!par.hasOwnProperty('h')) {
+			par.h = 'h-'+murmurHash3.x86.hash128(par.t) + '-' + par.t.length;
+		}
+
 		if (par.h in cache) {
 			//console.log(`Par ${par.i} found in cache`);
 			continue;
@@ -710,7 +717,9 @@ function sendTexts() {
 		});
 	}
 	else {
-		setTimeout(() => { parseResult({c:''}); }, 500);
+		setTimeout(() => {
+			parseResult({c:''});
+		}, 500);
 	}
 }
 
@@ -791,7 +800,6 @@ function prepareTexts() {
 			let text = $.trim(vals[i]);
 			to_send.push({
 				i: i+1,
-				h: 'h-'+murmurHash3.x86.hash128(text) + '-' + text.length,
 				t: text,
 			});
 		}
@@ -842,7 +850,6 @@ function prepareTexts() {
 
 		to_send.push({
 			i: id,
-			h: 'h-'+murmurHash3.x86.hash128(ptxt) + '-' + ptxt.length,
 			t: ptxt,
 		});
 	}

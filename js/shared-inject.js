@@ -37,3 +37,12 @@ function escapeRegExpTokens(txt) {
 	}
 	return ts.join('\\s+');
 }
+
+/* exported simplifyString */
+function simplifyString(txt) {
+	// Strip combining characters
+	txt = txt.replace(/[\u0300-\u036F\u1AB0-\u1AFF\u1DC0-\u1DFF\u20D0-\u20FF\uFE20-\uFE2F]+/g, '');
+	// Reduce surrogate pairs to single character
+	txt = txt.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '-');
+	return txt;
+}

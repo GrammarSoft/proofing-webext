@@ -21,6 +21,7 @@
 /* globals ggl_getCursor */
 /* globals rects_overlaps */
 /* globals escapeRegExpTokens */
+/* globals simplifyString */
 
 // Event handlers
 let ehs = {keypress: [], keydown: []};
@@ -201,10 +202,11 @@ function handleReplace(e) {
 	// ToDo: Test surrogate pairs and combining marks in {txt, word, rpl}
 	let good = false;
 	if (e.txt.length) {
-		let rx = new RegExp('^('+e.txt.replace(/[^\d\wa-zA-ZéÉöÖæÆøØåÅ.,?!;:]+/ig, '.*?')+'\\s*)'+escapeRegExpTokens(e.word));
+		let rx = new RegExp('^('+e.txt.replace(/[^\d\wa-zA-ZéÉöÖæÆøØåÅ.,?!;:]+/igu, '.*?')+'\\s*)'+escapeRegExpTokens(e.word));
 		let m = rx.exec(tc);
 		if (m) {
 			good = true;
+			m[1] = simplifyString(m[1]);
 			console.log(`Step ${m[1].length} right`);
 			dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.right}, repeat: m[1].length});
 		}
@@ -214,6 +216,7 @@ function handleReplace(e) {
 		let m = rx.exec(tc);
 		if (m) {
 			good = true;
+			m[1] = simplifyString(m[1]);
 			console.log(`Step ${m[1].length} right`);
 			dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.right}, repeat: m[1].length});
 		}

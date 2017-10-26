@@ -18,7 +18,6 @@
  */
 'use strict';
 
-/* globals Defs */
 /* globals context */
 /* globals checkActiveElement */
 /* globals getVisibleText */
@@ -54,7 +53,6 @@ function ggl_prepareTexts() {
 
 		to_send.push({
 			i: id,
-			h: 'h-'+murmurHash3.x86.hash128(ptxt) + '-' + ptxt.length,
 			t: ptxt,
 		});
 	}

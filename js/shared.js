@@ -212,7 +212,7 @@ function skipNonText(ml, i) {
 function replaceInTextNodes(tns, txt, word, rpl) {
 	rpl = rpl.padEnd(word.length, '\ue111');
 
-	let nonl = /[^\d\wa-zA-ZéÉöÖæÆøØåÅ.,]/ig;
+	let nonl = /[^\d\wa-zA-ZéÉöÖæÆøØåÅ.,]/igu;
 	let ti = 0;
 	let ns = 0;
 	let nsi = 0;

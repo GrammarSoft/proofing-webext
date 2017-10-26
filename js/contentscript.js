@@ -48,7 +48,9 @@ let context = null;
 let cmarking = null;
 let floater = null;
 let floater_doc = null;
+let cache = {};
 let to_send = null;
+let to_send_b = 0;
 let to_send_i = 0;
 let ts_xhr = null;
 let ts_slow = null;
@@ -471,7 +473,27 @@ function _parseResult(rv) {
 	let rs = '';
 
 	let txt = sanitize_result(rv.c);
-	let ps = $.trim(txt.replace(/\n+<\/s>\n+/g, "\n\n")).split(/<\/s\d+>/);
+	let ps = [];
+	let nps = $.trim(txt.replace(/\n+<\/s>\n+/g, "\n\n")).split(/<\/s\d+>/);
+
+	// Where missing in result, copy from the cache
+	for (let k = to_send_b, p=0 ; k<to_send_i ; ++k) {
+		let found = false;
+		for (let i=p ; i<nps.length ; ++i) {
+			if (nps[i].indexOf('<s'+to_send[k].i+'>\n') !== -1) {
+				console.log(`Par ${k} found in result`);
+				ps.push(nps[i]);
+				p = i;
+				found = true;
+				break;
+			}
+		}
+		if (!found && to_send[k].h in cache) {
+			console.log(`Par ${k} found in cache`);
+			ps.push('<s'+to_send[k].i+'>\n'+cache[to_send[k].h]);
+		}
+	}
+
 	for (let i=0 ; i<ps.length ; ++i) {
 		let cp = $.trim(ps[i]);
 		if (!cp) {
@@ -479,7 +501,14 @@ function _parseResult(rv) {
 		}
 
 		let lines = cp.split(/\n/);
-		let id = lines[0].replace(/^<s(.+)>$/, '$1');
+		let id = parseInt(lines[0].replace(/^<s(.+)>$/, '$1'));
+		for (let k = to_send_b ; k<to_send_i ; ++k) {
+			if (to_send[k].i === id) {
+				cache[to_send[k].h] = $.trim(cp.replace(/^<s.+>/g, ''));
+				break;
+			}
+		}
+
 		rs += '<p id="s'+id+'">';
 		let space = 0;
 
@@ -624,7 +653,10 @@ function _parseResult(rv) {
 	}
 	floater_doc.getElementById('result').innerHTML += rs;
 	$(floater_doc).find('span.marking').off().click(markingClick);
-	sendTexts();
+
+	if (to_send_i < to_send.length) {
+		sendTexts();
+	}
 }
 
 function parseResult(rv) {
@@ -637,15 +669,23 @@ function parseResult(rv) {
 }
 
 function sendTexts() {
-	// ToDo: Cache parse results on a per-paragraph basis - hash the paragraph content as key ( https://github.com/garycourt/murmurhash-js )
-	if (to_send_i < to_send.length) {
-		let text = to_send[to_send_i];
-		++to_send_i;
-		if ($.trim(text).length === 0) {
-			console.log('Empty text '+to_send_i);
-			return sendTexts();
+	let text = '';
+
+	for (to_send_b = to_send_i ; to_send_i < to_send.length ; ++to_send_i) {
+		let par = to_send[to_send_i];
+
+		if (par.h in cache) {
+			//console.log(`Par ${par.i} found in cache`);
+			continue;
 		}
-		//console.log(text.length);
+
+		text += `<s${par.i}>\n${par.t}\n</s${par.i}>\n\n`;
+		if (text.length >= Defs.MAX_RQ_SIZE) {
+			break;
+		}
+	}
+
+	if (text) {
 		let data = {
 			t: text,
 			r: ts_fail,
@@ -653,8 +693,11 @@ function sendTexts() {
 		ts_xhr = $.post('https://retmig.dk/callback.php?a=danproof', data).done(parseResult).fail(() => {
 			$.featherlight.close();
 			console.log(this);
-			alert('Kunne ikke gennemføre checkning af grammatik - er du sikker på at du har adgang til dette værktøj?');
+			alert(chrome.i18n.getMessage('errPostback'));
 		});
+	}
+	else {
+		setTimeout(() => { parseResult({c:''}); }, 500);
 	}
 	// ToDo: Show popup if no errors were found
 }
@@ -727,20 +770,19 @@ function prepareTexts() {
 
 	if (t) {
 		let vals = t.replace(/\u200b/g, '').replace(/\u00a0/g, ' ').replace(/\r\n/g, '\n').replace(/\r+/g, '\n').replace(/\n\n+/g, '\n\n').split(/\n\n+/g);
-		let text = '';
 		for (let i=0 ; i<vals.length ; ++i) {
 			if ($.trim(vals[i]).length === 0) {
 				continue;
 			}
 
 			let id = i+1;
-			text += '<s'+id+'>\n' + vals[i] + '\n</s'+id+'>\n\n';
-			if (text.length >= Defs.MAX_RQ_SIZE) {
-				to_send.push(text);
-				text = '';
-			}
+			let text = $.trim(vals[i]);
+			to_send.push({
+				i: i+1,
+				h: 'h-'+murmurHash3.x86.hash128(text) + '-' + text.length,
+				t: text,
+			});
 		}
-		to_send.push(text);
 		return to_send;
 	}
 
@@ -775,7 +817,6 @@ function prepareTexts() {
 
 	let ps = $(findVisibleTextNodes(context.e)).closest(tnjq).get();
 	console.log(ps);
-	let text = '';
 	for (let i=0 ; i<ps.length ; ++i) {
 		ps[i].normalize();
 		let ptxt = getVisibleStyledText(ps[i]);
@@ -786,14 +827,13 @@ function prepareTexts() {
 
 		let id = i+1;
 		ps[i].setAttribute('data-gtid', 's'+id);
-		text += '<s' + id + '>\n' + ptxt + '\n</s' + id + '>\n\n';
 
-		if (text.length >= Defs.MAX_RQ_SIZE) {
-			to_send.push(text);
-			text = '';
-		}
+		to_send.push({
+			i: id,
+			h: 'h-'+murmurHash3.x86.hash128(ptxt) + '-' + ptxt.length,
+			t: ptxt,
+		});
 	}
-	to_send.push(text);
 
 	return to_send;
 }
@@ -898,7 +938,22 @@ function checkActiveElement(mode) {
 		$.featherlight.close();
 	}
 
+	/*
+	// ToDo: Persist cache in local storage?
+	chrome.storage.local.getBytesInUse(null, (sz) => {
+		if (chrome.runtime.lastError) {
+			console.log(chrome.runtime.lastError.message);
+			return;
+		}
+		console.log(sz);
+	});
+	//*/
+
 	chrome.storage.sync.get(g_conf_defaults, (items) => {
+		if (chrome.runtime.lastError) {
+			console.log(chrome.runtime.lastError.message);
+			return;
+		}
 		for (let i in items) {
 			g_conf[i] = items[i];
 		}
@@ -927,6 +982,7 @@ function checkActiveElement(mode) {
 	});
 
 	to_send = prepareTexts();
+	to_send_b = 0;
 	to_send_i = 0;
 	console.log(to_send);
 

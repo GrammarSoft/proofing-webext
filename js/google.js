@@ -38,7 +38,6 @@ function ggl_replaceInContext(id, txt, word, rpl) {
 function ggl_prepareTexts() {
 	let to_send = [];
 
-	let text = '';
 	for (let i=0 ; i<context.ggl.elems.length ; ++i) {
 		if (context.ggl.elems[i].hasAttribute('data-gtid')) {
 			continue;
@@ -52,14 +51,13 @@ function ggl_prepareTexts() {
 
 		let id = i+1;
 		context.ggl.elems[i].setAttribute('data-gtid', 's'+id);
-		text += '<s' + id + '>\n' + ptxt + '\n</s' + id + '>\n\n';
 
-		if (text.length >= Defs.MAX_RQ_SIZE) {
-			to_send.push(text);
-			text = '';
-		}
+		to_send.push({
+			i: id,
+			h: 'h-'+murmurHash3.x86.hash128(ptxt) + '-' + ptxt.length,
+			t: ptxt,
+		});
 	}
-	to_send.push(text);
 
 	return to_send;
 }

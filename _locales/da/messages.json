@@ -41,6 +41,10 @@
 		"description": "No text selected or active",
 		"message": "Der var ikke noget valgt tekst eller markøren var ikke i et redigerbart felt."
 	},
+	"errPostback": {
+		"description": "A fatal error happened when POST'ing data to the backend",
+		"message": "Kunne ikke gennemføre checkning af teksten - er du sikker på at du har adgang til dette værktøj?"
+	},
 	"errReplacePar": {
 		"description": "Paragraph couldn't be found",
 		"message": "Kunne ikke finde paragrafen der skulle ændres i dokumentet. Kan være der er lavet ændringer siden checket startede."

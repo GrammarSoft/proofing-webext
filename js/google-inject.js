@@ -67,6 +67,16 @@ function dispatchKeyEvent(e) {
 	}
 }
 
+function dispatchUndo(n) {
+	if (typeof n === 'undefined') {
+		n = 1;
+	}
+	console.log(`Undoing ${n} times`);
+	for (let i=0 ; i<n ; ++i) {
+		dispatchKeyEvent({etype: 'keydown', event: {which: 90, charCode: 90, key: 'z', ctrlKey: true}});
+	}
+}
+
 function handleKey(e) {
 	if ('preventDefault' in e) {
 		e.preventDefault();
@@ -200,53 +210,47 @@ function handleReplace(e) {
 
 	// Determine whether and where to work
 	// ToDo: Test surrogate pairs and combining marks in {txt, word, rpl}
-	let good = false;
-	if (e.txt.length) {
-		let rx = new RegExp('^('+e.txt.replace(/[^\d\wa-zA-ZéÉöÖæÆøØåÅ.,?!;:]+/igu, '.*?')+'\\s*)'+escapeRegExpTokens(e.word));
-		let m = rx.exec(tc);
-		if (m) {
-			good = true;
-			m[1] = simplifyString(m[1]);
-			console.log(`Step ${m[1].length} right`);
-			dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.right}, repeat: m[1].length});
-		}
+	let expected = '';
+	let rx = new RegExp('^('+e.txt.replace(/[^\d\wa-zA-ZéÉöÖæÆøØåÅ.,!;:]+/igu, '.*?')+'\\s*)'+escapeRegExpTokens(e.word));
+	let m = rx.exec(tc);
+	if (m) {
+		//console.log([rx, m]);
+		expected = tc.replace(m[0], m[1] + e.rpl).replace(/\s+/ug, ' ');
+		m[1] = simplifyString(m[1]);
+		console.log(`Step ${m[1].length} right`);
+		dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.right}, repeat: m[1].length});
 	}
 	else {
-		let rx = new RegExp('^(\\s*)'+escapeRegExpTokens(e.word));
-		let m = rx.exec(tc);
-		if (m) {
-			good = true;
-			m[1] = simplifyString(m[1]);
-			console.log(`Step ${m[1].length} right`);
-			dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.right}, repeat: m[1].length});
-		}
-	}
-
-	if (!good) {
 		console.log('Could not locate prefix and/or word in paragraph');
 		window.postMessage({type: 'gtdp-replace-result', success: false, why: 'errReplaceTxt'}, '*');
 		return;
 	}
 
 	// Perform the actual replacement
+	let undo = 0;
 	let wi = 0;
 	for (; wi < e.word.length && wi < e.rpl.length ; ++wi) {
 		let event = {key: e.rpl.charAt(wi)};
 		event.which = event.charCode = event.key.charCodeAt(0);
-		console.log(`Inserting ${event.key}`);
+		console.log(`Replacing ${event.key}`);
 		// In order to preserve formatting, behold this mess:
 		dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.right}});
 		dispatchKeyEvent({etype: 'keypress', event});
 		dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.left}});
 		dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.backspace}});
 		dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.right}});
+		undo += 2;
 	}
 	// Insert leftover characters
-	for (; wi < e.rpl.length ; ++wi) {
-		let event = {key: e.rpl.charAt(wi)};
-		event.which = event.charCode = event.key.charCodeAt(0);
-		console.log(`Inserting ${event.key}`);
-		dispatchKeyEvent({etype: 'keypress', event});
+	if (wi < e.rpl.length) {
+		for (; wi < e.rpl.length ; ++wi) {
+			let event = {key: e.rpl.charAt(wi)};
+			event.which = event.charCode = event.key.charCodeAt(0);
+			console.log(`Inserting ${event.key}`);
+			dispatchKeyEvent({etype: 'keypress', event});
+		}
+		// Inserting multiple characters is a single undo action
+		++undo;
 	}
 	// Erase superfluous characters
 	if (wi < e.word.length) {
@@ -255,7 +259,18 @@ function handleReplace(e) {
 		for (let i=0 ; i< we ; ++i) {
 			dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.delete}});
 		}
+		// Erasing multiple characters is a single undo action
+		++undo;
 	}
+
+	tc = par.textContent.replace(/\u200b/ug, '').replace(/\s+/ug, ' ');
+	if (tc !== expected) {
+		console.log([tc, expected]);
+		dispatchUndo(undo);
+		window.postMessage({type: 'gtdp-replace-result', success: false, why: 'errReplaceMismatch'}, '*');
+		return;
+	}
+
 	window.postMessage({type: 'gtdp-replace-result', success: true}, '*');
 }
 

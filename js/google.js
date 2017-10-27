@@ -70,7 +70,10 @@ function ggl_getTextOrElement(mode) {
 	let ss = [];
 	if (mode === 'smart' || mode === 'selected') {
 		$('.kix-selection-overlay').each(function() {
-			ss.push(this.getBoundingClientRect());
+			// Only pick our own selections - not other users'
+			if (window.getComputedStyle(this).opacity >= 0.15) {
+				ss.push(this.getBoundingClientRect());
+			}
 		});
 	}
 	if (!ss.length && mode === 'smart') {

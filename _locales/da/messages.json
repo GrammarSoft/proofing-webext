@@ -62,6 +62,10 @@
 		"description": "Text in the paragraph couldn't be found",
 		"message": "Kunne ikke finde teksten der skulle ændres i dokumentet. Kan være der er lavet ændringer siden checket startede."
 	},
+	"errReplaceMismatch": {
+		"description": "The replacement did not lead to the expected result",
+		"message": "Ændringen havde ikke det forventede resultat. Det kan være du har et dobbelt mellemrum og bruger lige marginer."
+	},
 
 	"_trailing": {
 		"description": "",

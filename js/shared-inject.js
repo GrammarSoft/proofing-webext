@@ -40,6 +40,7 @@ function escapeRegExpTokens(txt) {
 
 /* exported simplifyString */
 function simplifyString(txt) {
+	txt = txt.replace(/\u200b/g, '').replace(/\u00a0/g, ' ');
 	// Strip combining characters
 	txt = txt.replace(/[\u0300-\u036F\u1AB0-\u1AFF\u1DC0-\u1DFF\u20D0-\u20FF\uFE20-\uFE2F]+/g, '');
 	// Reduce surrogate pairs to single character

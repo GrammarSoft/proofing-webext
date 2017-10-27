@@ -493,7 +493,7 @@ function _parseResult(rv) {
 		let found = false;
 		for (let i=p ; i<nps.length ; ++i) {
 			if (nps[i].indexOf('<s'+to_send[k].i+'>\n') !== -1) {
-				console.log(`Par ${k} found in result`);
+				//console.log(`Par ${k} found in result`);
 				ps.push(nps[i]);
 				p = i;
 				found = true;
@@ -501,7 +501,7 @@ function _parseResult(rv) {
 			}
 		}
 		if (!found && to_send[k].h in cache) {
-			console.log(`Par ${k} found in cache`);
+			//console.log(`Par ${k} found in cache`);
 			ps.push('<s'+to_send[k].i+'>\n'+cache[to_send[k].h]);
 		}
 	}

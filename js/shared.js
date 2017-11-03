@@ -208,6 +208,86 @@ function skipNonText(ml, i) {
 	return i;
 }
 
+/* exported findInTextNodes */
+function findInTextNodes(tns, txt, word) {
+	let rv = [];
+	let nonl = /[^\d\wa-zA-ZéÉöÖæÆøØåÅ.,]/igu;
+	let ns = 0;
+
+	let txts = [txt, word, ''];
+	for (let k=0 ; k<txts.length-1 ; ++k) {
+		let nsi = 0;
+		if (rv.length) {
+			nsi = rv[0].i;
+		}
+
+		let txt = txts[k];
+		let word = txts[k+1];
+		let ti = 0;
+		for (; txt.length && ns<tns.length ;) {
+			let ml = tns[ns].textContent;
+			for ( ; nsi<ml.length ; ++nsi) {
+				for (let tn=ti ; tn<txt.length && tn<ti+10 ; ++tn) {
+					if (txt.charAt(tn) === ml.charAt(nsi) || (txt.charAt(tn) === '\ue000' && nonl.test(ml.charAt(nsi)))) {
+						ti = tn;
+						// Find identical sequential letters, e.g. 1977
+						while (ti < txt.length-1 && txt.charAt(ti) === ml.charAt(nsi)) {
+							//console.log([ti, nsi, txt.charAt(ti), ml.charAt(nsi)]);
+							++ti;
+							++nsi;
+						}
+						break;
+					}
+				}
+				//console.log([ti, nsi, txt.charAt(ti), ml.charAt(nsi)]);
+				if (ti >= txt.length-1) {
+					break;
+				}
+			}
+
+			if (ti >= txt.length-1) {
+				break;
+			}
+			if (nsi >= ml.length) {
+				++ns;
+				nsi = 0;
+			}
+		}
+		console.log([txt, word, tns, ns, nsi, ti]);
+
+		let wi = 0;
+		for (; word.length && ns<tns.length ;) {
+			let did = false;
+			let ml = tns[ns].textContent;
+			while (nsi < ml.length && wi < word.length) {
+				if (/\s/.test(ml.charAt(nsi)) && !/\s/.test(word.charAt(wi))) {
+					did = true;
+					++nsi;
+				}
+				else if (!/\s/.test(ml.charAt(nsi)) && /\s/.test(word.charAt(wi))) {
+					did = true;
+					++wi;
+				}
+				else {
+					break;
+				}
+			}
+			if (nsi >= ml.length) {
+				++ns;
+				nsi = 0;
+			}
+			if (!did) {
+				break;
+			}
+		}
+		console.log([word, tns, ns, nsi, wi]);
+		rv.push({n: tns[ns], i: nsi});
+	}
+	console.log(rv);
+
+	return rv;
+}
+
 /* exported replaceInTextNodes */
 function replaceInTextNodes(tns, txt, word, rpl) {
 	rpl = rpl.padEnd(word.length, '\ue111');
@@ -346,7 +426,8 @@ function findVisibleTextNodes(nodes) {
 
 	function _findVisibleTextNodes(node) {
 		if (node.nodeType === Node.TEXT_NODE) {
-			if (wsx.test(node.nodeValue)) {
+			let nv = node.nodeValue.replace(/\u200b/g, '');
+			if (nv.length) {
 				tns.push(node);
 			}
 		}

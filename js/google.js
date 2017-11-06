@@ -33,6 +33,57 @@ function ggl_replaceInContext(id, txt, word, rpl) {
 	window.postMessage({type: 'gtdp-replace', id, txt, word, rpl}, '*');
 }
 
+/* exported ggl_createMarking */
+function ggl_createMarking(id, txt, word, mark) {
+	let app = $('.kix-appview-editor').get(0);
+	let par = $('.kix-paragraphrenderer[data-gtid="s'+id+'"]');
+	let tns = findVisibleTextNodes(par.get(0));
+
+	let rv = findInTextNodes(tns, txt, word);
+	let sel = document.createRange();
+	sel.setStart(rv[0].n, rv[0].i);
+	sel.setEnd(rv[1].n, rv[1].i);
+
+	id = 'm'+murmurHash3.x86.hash128(txt+word);
+	mark = mark.replace('</span>', '</div>');
+	mark = mark.replace('<span ', `<div id="${id}" `);
+	mark = mark.replace(/>[^<]+</g, '>&nbsp;<');
+
+	let rects = array_unique_json(sel.getClientRects());
+	console.log(rects);
+	let nr = [];
+	for (let i=0 ; i<rects.length ; ++i) {
+		let r = rects[i];
+		let last = null;
+		if (nr.length ===0 || r.top !== nr[nr.length-1].top) {
+			last = new DOMRect();
+			last.x = r.x;
+			last.y = r.y;
+			last.height = Math.max(last.height, r.height);
+			nr.push(last);
+		}
+		else {
+			last = nr[nr.length-1];
+		}
+		last.width += r.width;
+	}
+	for (let i=0 ; i<nr.length ; ++i) {
+		let r = nr[i];
+		let top = r.top;
+		top -= app.getBoundingClientRect().top;
+		top += app.scrollTop;
+		let left = r.left;
+
+		let off = window.getComputedStyle($('.kix-zoomdocumentplugin-outer').get(0));
+		top -= parseInt(off.top);
+		left -= parseInt(off.left);
+
+		let div = mark.replace('<div ', `<div style="position: absolute; top: ${top}px; left: ${left}px; width: ${r.width}px; height: ${r.height}px; z-index: 500; background-color: #00f; opacity: 0.25;" `);
+		$('#gtdp-markings').append(div);
+	}
+	console.log($('#'+id));
+}
+
 /* exported ggl_prepareTexts */
 function ggl_prepareTexts() {
 	let to_send = [];

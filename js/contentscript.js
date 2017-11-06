@@ -523,6 +523,7 @@ function _parseResult(rv) {
 
 		rs += '<p id="s'+id+'">';
 		let space = 0;
+		let txt = '';
 
 		for (let j=1 ; j<lines.length ; ++j) {
 			// Ignore duplicate opening tags
@@ -645,13 +646,24 @@ function _parseResult(rv) {
 				let rv = createMarking(w);
 				rs += rv.html;
 				space = rv.space;
+
+				if (context.ggl) {
+					if (rv.html.charAt(0) === ' ') {
+						txt += ' ';
+						rv.html = rv.html.substr(1);
+					}
+					ggl_createMarking(id, txt, w[0], rv.html);
+					txt += w[0];
+				}
 			}
 			else if (w[0] !== ',' || w.length === 1) {
 				if (space === 0 && w[0].search(/^[-,.:;?!$*½§£$%&()={}+]$/) === -1) {
 					rs += ' ';
+					txt += ' ';
 				}
 				space = 0;
-				rs += '<span class="word">'+escHTML(w[0])+'</span>';
+				rs += escHTML(w[0]);
+				txt += w[0];
 			}
 		}
 		rs += '</p>';
@@ -663,7 +675,7 @@ function _parseResult(rv) {
 			$.featherlight.close();
 		});
 	}
-	floater_doc.getElementById('result').innerHTML += rs;
+	$(floater_doc).find('#result').get(0).innerHTML += rs;
 	let ms = $(floater_doc).find('span.marking');
 	ms.off().click(markingClick);
 
@@ -982,23 +994,29 @@ function checkActiveElement(mode) {
 	context = getTextOrElement(mode);
 	console.log(context);
 
-	// Cannot open Featherlight before getTextOrElement(), as that messes with activeElement
-	floater = null;
-	floater_doc = null;
-	$.featherlight({
-		iframe: 'about:blank',
-		iframeWidth: 800,
-		iframeHeight: 600,
-		iframeMinWidth: 800,
-		iframeMinHeight: 600,
-		iframeMaxWidth: '80%',
-		iframeMaxHeight: '80%',
-		namespace: 'gt-popup',
-		openSpeed: 1,
-		closeSpeed: 1,
-		afterContent: floaterSetup,
-		beforeClose: cleanContext,
-	});
+	if (context.ggl) {
+		$('.kix-zoomdocumentplugin-outer').first().append('<div id="gtdp-markings"><div id="result" style="display: none;"></div></div>');
+		floater = floater_doc = $('#gtdp-markings').get(0);
+	}
+	else {
+		// Cannot open Featherlight before getTextOrElement(), as that messes with activeElement
+		floater = null;
+		floater_doc = null;
+		$.featherlight({
+			iframe: 'about:blank',
+			iframeWidth: 800,
+			iframeHeight: 600,
+			iframeMinWidth: 800,
+			iframeMinHeight: 600,
+			iframeMaxWidth: '80%',
+			iframeMaxHeight: '80%',
+			namespace: 'gt-popup',
+			openSpeed: 1,
+			closeSpeed: 1,
+			afterContent: floaterSetup,
+			beforeClose: cleanContext,
+		});
+	}
 
 	to_send = prepareTexts();
 	to_send_b = 0;

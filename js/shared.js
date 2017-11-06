@@ -208,6 +208,20 @@ function skipNonText(ml, i) {
 	return i;
 }
 
+/* exported array_unique_json */
+function array_unique_json(arr) {
+	let rv = [];
+	let js = [];
+	for (let i=0 ; i<arr.length ; ++i) {
+		let json = JSON.stringify(arr[i]);
+		if (js.indexOf(json) === -1) {
+			js.push(json);
+			rv.push(arr[i]);
+		}
+	}
+	return rv;
+}
+
 /* exported findInTextNodes */
 function findInTextNodes(tns, txt, word) {
 	let rv = [];
@@ -245,26 +259,29 @@ function findInTextNodes(tns, txt, word) {
 				}
 			}
 
-			if (ti >= txt.length-1) {
-				break;
-			}
 			if (nsi >= ml.length) {
 				++ns;
 				nsi = 0;
 			}
+			if (ti >= txt.length-1) {
+				break;
+			}
 		}
-		console.log([txt, word, tns, ns, nsi, ti]);
+		console.log([ti, txt.length, txt.charAt(ti), txt]);
+		//console.log([txt, word, tns, ns, nsi, ti]);
 
 		let wi = 0;
 		for (; word.length && ns<tns.length ;) {
 			let did = false;
 			let ml = tns[ns].textContent;
 			while (nsi < ml.length && wi < word.length) {
-				if (/\s/.test(ml.charAt(nsi)) && !/\s/.test(word.charAt(wi))) {
+				if (/[\s\u200b]/.test(ml.charAt(nsi)) && !/\s/.test(word.charAt(wi))) {
+					//console.log([ns, nsi, wi, ml, word]);
 					did = true;
 					++nsi;
 				}
-				else if (!/\s/.test(ml.charAt(nsi)) && /\s/.test(word.charAt(wi))) {
+				else if (!/[\s\u200b]/.test(ml.charAt(nsi)) && /\s/.test(word.charAt(wi))) {
+					//console.log([ns, nsi, wi, ml, word]);
 					did = true;
 					++wi;
 				}
@@ -280,7 +297,7 @@ function findInTextNodes(tns, txt, word) {
 				break;
 			}
 		}
-		console.log([word, tns, ns, nsi, wi]);
+		//console.log([word, tns, ns, nsi, wi]);
 		rv.push({n: tns[ns], i: nsi});
 	}
 	console.log(rv);

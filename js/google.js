@@ -18,12 +18,20 @@
  */
 'use strict';
 
-/* globals context */
+/* globals array_unique_json */
 /* globals checkActiveElement */
+/* globals cmarking */
+/* globals context */
+/* globals DOMRect */
+/* globals escHTML */
+/* globals findInTextNodes */
+/* globals findVisibleTextNodes */
 /* globals getVisibleText */
+/* globals ggl_cursor:true */
 /* globals ggl_getCursor */
 /* globals ggl_loaded:true */
-/* globals ggl_cursor:true */
+/* globals markingClick */
+/* globals murmurHash3 */
 /* globals rects_overlaps */
 
 /* exported ggl_loaded */
@@ -212,16 +220,22 @@ function ggl_replaceResult(e) {
 	e = e.data;
 
 	if (e.success) {
+		// Move markings that may have gotten out of place due to the replacement action
 		let cmr = cmarking.get(0).getBoundingClientRect();
 		let ms = $('span.marking').get();
+		let seen = false;
 		for (let i=0 ; i<ms.length ; ++i) {
-			if (ms[i].getBoundingClientRect().top < cmr.top) {
-				continue;
-			}
+			// Skip the point of change
 			if (ms[i] === cmarking.get(0)) {
+				seen = true;
 				continue;
 			}
-			if (!ggl_layoutMarking(ms[i])) {
+			// Marks on lines above the point of change won't have moved
+			if (ms[i].getBoundingClientRect().bottom < cmr.top) {
+				continue;
+			}
+			// If this mark did not need moving, and we're past the point of change, we know no later marks will need moving
+			if (!ggl_layoutMarking(ms[i]) && seen) {
 				break;
 			}
 		}

@@ -21,7 +21,6 @@
 /* globals ggl_getCursor */
 /* globals rects_overlaps */
 /* globals escapeRegExpTokens */
-/* globals simplifyString */
 
 // Event handlers
 let ehs = {keypress: [], keydown: []};

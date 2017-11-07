@@ -17,6 +17,190 @@
  * along with this project.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* Bootstrap popover */
+.popover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1060;
+  display: block;
+  max-width: 276px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: left;
+  text-align: start;
+  text-decoration: none;
+  text-shadow: none;
+  text-transform: none;
+  letter-spacing: normal;
+  word-break: normal;
+  word-spacing: normal;
+  white-space: normal;
+  line-break: auto;
+  font-size: 0.875rem;
+  word-wrap: break-word;
+  background-color: #fff;
+  background-clip: padding-box;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 0.3rem;
+}
+
+.popover .arrow {
+  position: absolute;
+  display: block;
+  width: 0.8rem;
+  height: 0.4rem;
+}
+
+.popover .arrow::before,
+.popover .arrow::after {
+  position: absolute;
+  display: block;
+  border-color: transparent;
+  border-style: solid;
+}
+
+.popover .arrow::before {
+  content: "";
+  border-width: 0.8rem;
+}
+
+.popover .arrow::after {
+  content: "";
+  border-width: 0.8rem;
+}
+
+.popover.bs-popover-top, .popover.bs-popover-auto[x-placement^="top"] {
+  margin-bottom: 0.8rem;
+}
+
+.popover.bs-popover-top .arrow, .popover.bs-popover-auto[x-placement^="top"] .arrow {
+  bottom: 0;
+}
+
+.popover.bs-popover-top .arrow::before, .popover.bs-popover-auto[x-placement^="top"] .arrow::before,
+.popover.bs-popover-top .arrow::after, .popover.bs-popover-auto[x-placement^="top"] .arrow::after {
+  border-bottom-width: 0;
+}
+
+.popover.bs-popover-top .arrow::before, .popover.bs-popover-auto[x-placement^="top"] .arrow::before {
+  bottom: -0.8rem;
+  margin-left: -0.8rem;
+  border-top-color: rgba(0, 0, 0, 0.25);
+}
+
+.popover.bs-popover-top .arrow::after, .popover.bs-popover-auto[x-placement^="top"] .arrow::after {
+  bottom: calc((0.8rem - 1px) * -1);
+  margin-left: -0.8rem;
+  border-top-color: #fff;
+}
+
+.popover.bs-popover-right, .popover.bs-popover-auto[x-placement^="right"] {
+  margin-left: 0.8rem;
+}
+
+.popover.bs-popover-right .arrow, .popover.bs-popover-auto[x-placement^="right"] .arrow {
+  left: 0;
+}
+
+.popover.bs-popover-right .arrow::before, .popover.bs-popover-auto[x-placement^="right"] .arrow::before,
+.popover.bs-popover-right .arrow::after, .popover.bs-popover-auto[x-placement^="right"] .arrow::after {
+  margin-top: -0.8rem;
+  border-left-width: 0;
+}
+
+.popover.bs-popover-right .arrow::before, .popover.bs-popover-auto[x-placement^="right"] .arrow::before {
+  left: -0.8rem;
+  border-right-color: rgba(0, 0, 0, 0.25);
+}
+
+.popover.bs-popover-right .arrow::after, .popover.bs-popover-auto[x-placement^="right"] .arrow::after {
+  left: calc((0.8rem - 1px) * -1);
+  border-right-color: #fff;
+}
+
+.popover.bs-popover-bottom, .popover.bs-popover-auto[x-placement^="bottom"] {
+  margin-top: 0.8rem;
+}
+
+.popover.bs-popover-bottom .arrow, .popover.bs-popover-auto[x-placement^="bottom"] .arrow {
+  top: 0;
+}
+
+.popover.bs-popover-bottom .arrow::before, .popover.bs-popover-auto[x-placement^="bottom"] .arrow::before,
+.popover.bs-popover-bottom .arrow::after, .popover.bs-popover-auto[x-placement^="bottom"] .arrow::after {
+  margin-left: -0.8rem;
+  border-top-width: 0;
+}
+
+.popover.bs-popover-bottom .arrow::before, .popover.bs-popover-auto[x-placement^="bottom"] .arrow::before {
+  top: -0.8rem;
+  border-bottom-color: rgba(0, 0, 0, 0.25);
+}
+
+.popover.bs-popover-bottom .arrow::after, .popover.bs-popover-auto[x-placement^="bottom"] .arrow::after {
+  top: calc((0.8rem - 1px) * -1);
+  border-bottom-color: #fff;
+}
+
+.popover.bs-popover-bottom .popover-header::before, .popover.bs-popover-auto[x-placement^="bottom"] .popover-header::before {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  display: block;
+  width: 20px;
+  margin-left: -10px;
+  content: "";
+  border-bottom: 1px solid #f7f7f7;
+}
+
+.popover.bs-popover-left, .popover.bs-popover-auto[x-placement^="left"] {
+  margin-right: 0.8rem;
+}
+
+.popover.bs-popover-left .arrow, .popover.bs-popover-auto[x-placement^="left"] .arrow {
+  right: 0;
+}
+
+.popover.bs-popover-left .arrow::before, .popover.bs-popover-auto[x-placement^="left"] .arrow::before,
+.popover.bs-popover-left .arrow::after, .popover.bs-popover-auto[x-placement^="left"] .arrow::after {
+  margin-top: -0.8rem;
+  border-right-width: 0;
+}
+
+.popover.bs-popover-left .arrow::before, .popover.bs-popover-auto[x-placement^="left"] .arrow::before {
+  right: -0.8rem;
+  border-left-color: rgba(0, 0, 0, 0.25);
+}
+
+.popover.bs-popover-left .arrow::after, .popover.bs-popover-auto[x-placement^="left"] .arrow::after {
+  right: calc((0.8rem - 1px) * -1);
+  border-left-color: #fff;
+}
+
+.popover-header {
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0;
+  font-size: 1rem;
+  color: inherit;
+  background-color: #f7f7f7;
+  border-bottom: 1px solid #ebebeb;
+  border-top-left-radius: calc(0.3rem - 1px);
+  border-top-right-radius: calc(0.3rem - 1px);
+}
+
+.popover-header:empty {
+  display: none;
+}
+
+.popover-body {
+  padding: 0.5rem 0.75rem;
+  color: #212529;
+}
+
+
 a {
 	cursor: pointer;
 }
@@ -94,49 +278,13 @@ a {
 	background-color: #f49ba1;
 }
 
-/* Bootstrap popover styles */
 .popover {
-	position: absolute;
-	top: 0;
-	left: 0;
-	z-index: 1060;
-	display: block;
-	font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
-	font-style: normal;
-	font-weight: 400;
-	line-height: 1.5;
-	text-align: left;
-	text-align: start;
-	text-decoration: none;
-	text-shadow: none;
-	text-transform: none;
-	letter-spacing: normal;
-	word-break: normal;
-	word-spacing: normal;
-	white-space: normal;
-	line-break: auto;
-	font-size: .875rem;
-	word-wrap: break-word;
-	background-color: #fff;
-	background-clip: padding-box;
-	border: 1px solid rgba(0,0,0,.2);
-	border-radius: .3rem;
-
 	max-width: 350px;
 	box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.3);
 }
 
-.popover.bs-popover-auto[x-placement^=bottom], .popover.bs-popover-bottom {
-	margin-top: .8rem;
-}
-
-.popover-body {
-	padding: .5rem .75rem;
-	color: #212529;
-}
-
-.popover-header {
-	display: none;
+.popover a {
+	color: #15c;
 }
 
 #popup {
@@ -206,8 +354,8 @@ a:hover .icon, .icon {
 	display: block;
 	position: absolute;
 	cursor: pointer !important;
-	border-radius: 3px;
-	opacity: 0.35;
+	border-radius: 2px;
+	opacity: 0.25;
 	z-index: 500;
 }
 .marking-red {

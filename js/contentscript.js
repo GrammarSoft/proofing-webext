@@ -66,7 +66,7 @@ function isInDictionary(e) {
 }
 
 function addToDictionary() {
-	let word = cmarking.text();
+	let word = markingWord(cmarking);
 	if (!isInDictionary(word)) {
 		addToDictionary_helper(word);
 		if (opt_storage) {
@@ -78,7 +78,7 @@ function addToDictionary() {
 
 	$(floater_doc).find('span.marking-yellow').each(function() {
 		cmarking = $(this);
-		if (cmarking.text() !== word && cmarking.text().toUpperCase() !== word.toUpperCase()) {
+		if (markingWord(cmarking) !== word && markingWord(cmarking).toUpperCase() !== word.toUpperCase()) {
 			return;
 		}
 		markingYellow();
@@ -109,8 +109,8 @@ function markingPopup(c, exp) {
 	cmarking.focus().addClass('marking-selected');
 	//console.log([c.offset(), c.width(), p.width()]);
 
-	let all_upper = is_upper(cmarking.text());
-	let first_upper = all_upper || is_upper(cmarking.text().charAt(0));
+	let all_upper = is_upper(markingWord(cmarking));
+	let first_upper = all_upper || is_upper(markingWord(cmarking).charAt(0));
 
 	let types = cmarking.attr('data-types');
 	if (types.indexOf('@lower') !== -1) {
@@ -199,29 +199,29 @@ function markingClick() {
 function markingInputOne() {
 	let txt = $(this).closest('div.popover').find('#input').val();
 	ga_log('marking', 'input-one', txt);
-	log_click({'input': cmarking.attr('data-types'), 'w': cmarking.text(), 'r': txt});
-	markingDo(cmarking.text(), txt);
+	log_click({'input': cmarking.attr('data-types'), 'w': markingWord(cmarking), 'r': txt});
+	markingDo(markingWord(cmarking), txt);
 }
 
 function markingInputAll() {
 	let p = $(this).closest('html');
 	let cm = cmarking;
-	let word = cm.text();
+	let word = markingWord(cm);
 	let types = cm.attr('data-types');
 	let txt = p.find('div.popover').find('#input').val();
 
 	$(floater_doc).find('span.marking').each(function() {
 		cmarking = $(this);
-		if (cmarking.get(0) == cm.get(0) || cmarking.text() !== word || cmarking.attr('data-types') !== types) {
+		if (cmarking.get(0) == cm.get(0) || markingWord(cmarking) !== word || cmarking.attr('data-types') !== types) {
 			return;
 		}
-		markingDo(cmarking.text(), txt);
+		markingDo(markingWord(cmarking), txt);
 	});
 
 	cmarking = cm;
 	ga_log('marking', 'input-all', txt);
-	log_click({'input': cmarking.attr('data-types'), 'w': cmarking.text(), 'r': txt});
-	markingDo(cmarking.text(), txt);
+	log_click({'input': cmarking.attr('data-types'), 'w': markingWord(cmarking), 'r': txt});
+	markingDo(markingWord(cmarking), txt);
 }
 
 function markingInput() {
@@ -247,7 +247,7 @@ function markingInput() {
 		});
 		pop.find('#one').off().on('click', markingInputOne);
 		pop.find('#all').off().on('click', markingInputAll);
-		pop.find('#input').val(cmarking.text()).focus();
+		pop.find('#input').val(markingWord(cmarking)).focus();
 	});
 	cmarking.popover('show');
 
@@ -355,6 +355,13 @@ function replaceInContext(id, txt, word, rpl) {
 	return false;
 }
 
+function markingWord(mark) {
+	if (mark.attr('data-word')) {
+		return mark.attr('data-word');
+	}
+	return mark.text();
+}
+
 function markingDo(word, rpl) {
 	let p = $(floater_doc);
 	let markings = p.find('span.marking');
@@ -375,18 +382,26 @@ function markingDo(word, rpl) {
 
 	let delay = false;
 	if (!context.t && word !== rpl) {
-		let par = cmarking.closest('p').get(0);
 		let txt = '';
-		for (let i=0 ; i<par.childNodes.length ; ++i) {
-			if (par.hasAttribute('data-types') && par.getAttribute('data-types').indexOf('@insert') !== -1) {
-				continue;
-			}
-			if (par.childNodes[i] == cmarking.get(0)) {
-				break;
-			}
-			txt += par.childNodes[i].textContent;
+		let id = '';
+		if (cmarking.attr('data-txt')) {
+			txt = cmarking.attr('data-txt');
+			id = cmarking.attr('id');
 		}
-		delay = replaceInContext(par.getAttribute('id'), txt, word, rpl);
+		else {
+			let par = cmarking.closest('p').get(0);
+			for (let i=0 ; i<par.childNodes.length ; ++i) {
+				if (par.hasAttribute('data-types') && par.getAttribute('data-types').indexOf('@insert') !== -1) {
+					continue;
+				}
+				if (par.childNodes[i] == cmarking.get(0)) {
+					break;
+				}
+				txt += par.childNodes[i].textContent;
+			}
+			par.getAttribute('id');
+		}
+		delay = replaceInContext(id, txt, word, rpl);
 	}
 
 	context.replace = () => {
@@ -417,16 +432,16 @@ function markingAccept(ev) {
 		return false;
 	}
 
-	let word = cmarking.text();
+	let word = markingWord(cmarking);
 	let rpl = '';
 	let types = cmarking.attr('data-types');
-	let click = {'accept': types, 'w': cmarking.text()};
+	let click = {'accept': types, 'w': markingWord(cmarking)};
 	if (types.indexOf('@nil') !== -1) {
 		rpl = '';
 	}
 	else if (types.indexOf('@insert') !== -1) {
 		word = '';
-		rpl = cmarking.text();
+		rpl = markingWord(cmarking);
 	}
 	else {
 		rpl = $(this).text();
@@ -442,30 +457,30 @@ function markingAccept(ev) {
 
 function markingDiscard(ev) {
 	ga_log('marking', 'discard', cmarking.attr('data-types'));
-	log_click({'discard': cmarking.attr('data-types'), 'w': cmarking.text()});
+	log_click({'discard': cmarking.attr('data-types'), 'w': markingWord(cmarking)});
 
 	let types = cmarking.attr('data-types');
 	if (types.indexOf('@insert') !== -1) {
-		markingDo(cmarking.text(), '');
+		markingDo(markingWord(cmarking), '');
 	}
 	else {
-		markingDo(cmarking.text(), cmarking.text());
+		markingDo(markingWord(cmarking), markingWord(cmarking));
 	}
 
 	return false;
 }
 
 function markingYellow() {
-	let click = {'yellow': cmarking.attr('data-types'), 'w': cmarking.text()};
+	let click = {'yellow': cmarking.attr('data-types'), 'w': markingWord(cmarking)};
 	if (cmarking.attr('data-sugs')) {
 		let s = cmarking.attr('data-sugs').split('\t')[0];
-		if (s === cmarking.text() || s.toUpperCase() === cmarking.text().toUpperCase()) {
+		if (s === markingWord(cmarking) || s.toUpperCase() === markingWord(cmarking).toUpperCase()) {
 			click.r = s;
-			markingDo(cmarking.text(), s);
+			markingDo(markingWord(cmarking), s);
 		}
 	}
 	else {
-		markingDo(cmarking.text(), cmarking.text());
+		markingDo(markingWord(cmarking), markingWord(cmarking));
 	}
 	ga_log('marking', 'yellow', cmarking.attr('data-types'));
 	log_click(click);
@@ -657,7 +672,7 @@ function _parseResult(rv) {
 				}
 			}
 			else if (w[0] !== ',' || w.length === 1) {
-				if (space === 0 && w[0].search(/^[-,.:;?!$*½§£$%&()={}+]$/) === -1) {
+				if (txt.length && space === 0 && w[0].search(/^[-,.:;?!$*½§£$%&()={}+]$/) === -1) {
 					rs += ' ';
 					txt += ' ';
 				}
@@ -669,20 +684,26 @@ function _parseResult(rv) {
 		rs += '</p>';
 	}
 
-	if (!floater_doc) {
-		floater_doc = floater.contentWindow.document;
-		$(floater_doc).find('#btn-close').off().click(() => {
-			$.featherlight.close();
-		});
+	let ms = [];
+	if (context.ggl) {
+		ms = $('#gtdp-markings').find('span.marking');
 	}
-	$(floater_doc).find('#result').get(0).innerHTML += rs;
-	let ms = $(floater_doc).find('span.marking');
+	else {
+		if (!floater_doc) {
+			floater_doc = floater.contentWindow.document;
+			$(floater_doc).find('#btn-close').off().click(() => {
+				$.featherlight.close();
+			});
+		}
+		$(floater_doc).find('#result').get(0).innerHTML += rs;
+		ms = $(floater_doc).find('span.marking');
+	}
 	ms.off().click(markingClick);
 
 	if (to_send_i < to_send.length) {
 		sendTexts();
 	}
-	else if (ms.length == 0) {
+	else if (ms.length === 0) {
 		setTimeout(msgNoMarkingsFound, 100);
 	}
 }
@@ -741,6 +762,9 @@ function cleanContext() {
 	}
 
 	let b = $(context.e).closest('html');
+
+	$('#gtdp-markings').text('');
+	$('.popover').remove();
 
 	// Google Docs, if there was a selection
 	let ps = b.find('span.gtdp-word').parent();
@@ -941,8 +965,8 @@ function floaterSetup() {
 	floater = $.featherlight.current().$content.get(0);
 	floater.removeAttribute('src');
 	floater.srcdoc = '<!DOCTYPE html><html><head><meta charset="UTF-8">'+
-		'<link href="chrome-extension://'+chrome.i18n.getMessage('@@extension_id')+'/vendor/bootstrap.min.css" rel="stylesheet" type="text/css">'+
-		'<link href="chrome-extension://'+chrome.i18n.getMessage('@@extension_id')+'/css/inline.css" rel="stylesheet" type="text/css">'+
+		'<link href="'+chrome.extension.getURL('vendor/bootstrap.min.css')+'" rel="stylesheet" type="text/css">'+
+		'<link href="'+chrome.extension.getURL('css/inline.css')+'" rel="stylesheet" type="text/css">'+
 		'</head><body>'+
 		'<div id="buttons">'+
 		'<span class="button button-blue" id="btn-correct-all"><span class="icon icon-approve-all"></span><span class="text">'+chrome.i18n.getMessage('btnApproveYellows')+'</span></span>'+
@@ -951,6 +975,7 @@ function floaterSetup() {
 		'</body></html>';
 
 	// ToDo: Make this part of a deployment script
+	// ToDo: chrome.extension.getURL() obsoletes this?
 	if (navigator.userAgent.indexOf('Firefox') !== -1) {
 		floater.srcdoc = floater.srcdoc.replace(/chrome-extension:/g, 'moz-extension:');
 	}
@@ -995,7 +1020,6 @@ function checkActiveElement(mode) {
 	console.log(context);
 
 	if (context.ggl) {
-		$('.kix-zoomdocumentplugin-outer').first().append('<div id="gtdp-markings"><div id="result" style="display: none;"></div></div>');
 		floater = floater_doc = $('#gtdp-markings').get(0);
 	}
 	else {
@@ -1055,6 +1079,14 @@ setTimeout(() => {
 	if (!$('.docs-texteventtarget-iframe').length) {
 		return;
 	}
+
+	$('.kix-zoomdocumentplugin-outer').first().append('<div id="gtdp-markings"></div>');
+
+	let css = document.createElement('link');
+	css.rel = 'stylesheet';
+	css.type = 'text/css';
+	css.href = chrome.extension.getURL('css/google-inject.css');
+	document.head.appendChild(css);
 
 	let script = document.createElement('script');
 	script.src = chrome.extension.getURL('js/shared-inject.js');

@@ -1,0 +1,260 @@
+/*!
+ * Copyright 2016-2017 GrammarSoft ApS <info@grammarsoft.com> at https://grammarsoft.com/
+ * Linguistic backend by Eckhard Bick <eckhard.bick@gmail.com>
+ * Frontend by Tino Didriksen <mail@tinodidriksen.com>
+ *
+ * This project is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This project is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this project.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+a {
+	cursor: pointer;
+}
+
+#buttons {
+	display: flex;
+	align-items: stretch;
+}
+.button {
+	flex: 1 1 auto;
+	display: inline-block;
+	text-align: center;
+	color: #fff;
+	height: 35px;
+	line-height: 35px;
+	cursor: pointer;
+	border-radius: 10px;
+	margin: 3px;
+}
+
+.button * {
+	text-align: center;
+}
+.button-small, .button-small * {
+	line-height: 10px;
+}
+.button-small * {
+	display: block;
+	clear: both;
+	margin: 0 auto;
+}
+.button-small .icon {
+	margin-top: 3px;
+}
+.button-small .text {
+	font-size: 8px;
+}
+.button-blue {
+	background-color: #0a7fb9;
+}
+.button-blue:hover {
+	background-color: #05405d;
+}
+.button-blue.disabled {
+	background-color: #99cce3;
+}
+
+.button-green {
+	background-color: #95c11f;
+}
+.button-green:hover {
+	background-color: #486110;
+}
+.button-green.disabled {
+	background-color: #d5e6a5;
+}
+
+.button-yellow {
+	background-color: #f2af05;
+}
+.button-yellow:hover {
+	background-color: #bf8a04;
+}
+.button-yellow.disabled {
+	background-color: #fee19b;
+}
+
+.button-red {
+	background-color: #e30613;
+}
+.button-red:hover {
+	background-color: #72030a;
+}
+.button-red.disabled {
+	background-color: #f49ba1;
+}
+
+/* Bootstrap popover styles */
+.popover {
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 1060;
+	display: block;
+	font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+	font-style: normal;
+	font-weight: 400;
+	line-height: 1.5;
+	text-align: left;
+	text-align: start;
+	text-decoration: none;
+	text-shadow: none;
+	text-transform: none;
+	letter-spacing: normal;
+	word-break: normal;
+	word-spacing: normal;
+	white-space: normal;
+	line-break: auto;
+	font-size: .875rem;
+	word-wrap: break-word;
+	background-color: #fff;
+	background-clip: padding-box;
+	border: 1px solid rgba(0,0,0,.2);
+	border-radius: .3rem;
+
+	max-width: 350px;
+	box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.3);
+}
+
+.popover.bs-popover-auto[x-placement^=bottom], .popover.bs-popover-bottom {
+	margin-top: .8rem;
+}
+
+.popover-body {
+	padding: .5rem .75rem;
+	color: #212529;
+}
+
+.popover-header {
+	display: none;
+}
+
+#popup {
+	white-space: nowrap;
+}
+#popup .action {
+	position: relative;
+	padding-right: 40px;
+	display: block;
+	padding-top: 0.5ex;
+	padding-bottom: 0.5ex;
+}
+#popup a * {
+	line-height: 20px;
+	vertical-align: middle;
+}
+
+#explanation {
+	margin-top: 0.5ex;
+	border-top: 1px solid #888;
+	max-height: 300px;
+	overflow-y: auto;
+}
+#explanation h3 {
+	font-size: 18px;
+}
+#explanation hr {
+	margin-top: 5px;
+	margin-bottom: 5px;
+}
+#explanation > * {
+	padding-right: 30px;
+	display: block;
+	position: relative;
+}
+
+.icon {
+	display: inline-block;
+	width: 20px;
+	height: 20px;
+	margin-right: 1ex;
+}
+.icon-explain {
+	background: url('../images/explanation_light_0020.png');
+}
+a:hover .icon-explain {
+	background: url('../images/explanation_dark_0020.png');
+}
+.icon-accept {
+	background: url('../images/insert_marking_light_0020.png');
+}
+a:hover .icon-accept {
+	background: url('../images/insert_marking_dark_0020.png');
+}
+.icon-discard {
+	background: url('../images/remove_marking_light_0020.png');
+}
+a:hover .icon-discard {
+	background: url('../images/remove_marking_dark_0020.png');
+}
+a:hover .icon, .icon {
+	background-repeat: no-repeat;
+	background-size: 20px;
+}
+
+.marking {
+	display: block;
+	position: absolute;
+	cursor: pointer !important;
+	border-radius: 3px;
+	opacity: 0.35;
+	z-index: 500;
+}
+.marking-red {
+	background-color: #c12e2a;
+}
+.marking-red.alt:after {
+	content: " ✗";
+}
+.marking-yellow {
+	background-color: #eb9316;
+}
+.marking-yellow.alt:after {
+	content: " ?";
+}
+.marking-green {
+	background-color: #419641;
+}
+.marking-green.alt:after {
+	content: " ✓";
+}
+.marking-selected {
+	opacity: 0.45;
+}
+
+@media	only screen and (-webkit-min-device-pixel-ratio: 1.3),
+  only screen and (-o-min-device-pixel-ratio: 13/10),
+  only screen and (min-resolution: 120dpi) {
+	.icon-explain {
+		background-image: url('../images/explanation_light_0060.png');
+	}
+	a:hover .icon-explain {
+		background-image: url('../images/explanation_dark_0060.png');
+	}
+	.icon-accept {
+		background-image: url('../images/insert_marking_light_0060.png');
+	}
+	a:hover .icon-accept {
+		background-image: url('../images/insert_marking_dark_0060.png');
+	}
+	.icon-discard {
+		background-image: url('../images/remove_marking_light_0060.png');
+	}
+	a:hover .icon-discard {
+		background-image: url('../images/remove_marking_dark_0060.png');
+	}
+	a:hover .icon, .icon {
+		background-repeat: no-repeat;
+		background-size: 20px;
+	}
+}

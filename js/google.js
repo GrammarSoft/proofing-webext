@@ -33,21 +33,27 @@ function ggl_replaceInContext(id, txt, word, rpl) {
 	window.postMessage({type: 'gtdp-replace', id, txt, word, rpl}, '*');
 }
 
-/* exported ggl_createMarking */
-function ggl_createMarking(id, txt, word, mark) {
+/* exported ggl_layoutMarking */
+function ggl_layoutMarking(sid) {
+	if (typeof sid !== 'string') {
+		sid = sid.getAttribute('id');
+	}
+	let mark = $('#'+sid);
+	let id = mark.attr('data-id');
+	let txt = mark.attr('data-txt');
+	let word = mark.attr('data-word');
+
+	mark = mark.get(0).outerHTML;
+	let spans = '';
+
 	let app = $('.kix-appview-editor').get(0);
-	let par = $('.kix-paragraphrenderer[data-gtid="s'+id+'"]');
+	let par = $('.kix-paragraphrenderer[data-gtid="'+id+'"]');
 	let tns = findVisibleTextNodes(par.get(0));
 
 	let rv = findInTextNodes(tns, txt, word);
 	let sel = document.createRange();
 	sel.setStart(rv[0].n, rv[0].i);
 	sel.setEnd(rv[1].n, rv[1].i);
-
-	id = 'm'+murmurHash3.x86.hash128(txt+word);
-	mark = mark.replace('</span>', '</div>');
-	mark = mark.replace('<span ', `<div id="${id}" `);
-	mark = mark.replace(/>[^<]+</g, '>&nbsp;<');
 
 	let rects = array_unique_json(sel.getClientRects());
 	console.log(rects);
@@ -72,16 +78,42 @@ function ggl_createMarking(id, txt, word, mark) {
 		let top = r.top;
 		top -= app.getBoundingClientRect().top;
 		top += app.scrollTop;
+		top -= 1;
+
 		let left = r.left;
+		left -= 1;
+
+		let width = r.width;
+		width += 2;
+
+		let height = r.height;
+		height += 2;
 
 		let off = window.getComputedStyle($('.kix-zoomdocumentplugin-outer').get(0));
 		top -= parseInt(off.top);
 		left -= parseInt(off.left);
 
-		let div = mark.replace('<div ', `<div style="position: absolute; top: ${top}px; left: ${left}px; width: ${r.width}px; height: ${r.height}px; z-index: 500; background-color: #00f; opacity: 0.25;" `);
-		$('#gtdp-markings').append(div);
+		spans += mark.replace(/style="[^"]*"/g, `style="top: ${top}px; left: ${left}px; width: ${width}px; height: ${height}px;"`);
 	}
-	console.log($('#'+id));
+
+	if (mark !== spans) {
+		$('#'+sid).replaceWith(spans);
+		$('#'+sid).off().click(markingClick);
+		return true;
+	}
+
+	return false;
+}
+
+/* exported ggl_createMarking */
+function ggl_createMarking(id, txt, word, mark) {
+	let sid = 'm'+murmurHash3.x86.hash128(txt+word);
+	txt = escHTML(txt);
+	word = escHTML(word);
+	mark = mark.replace('<span ', `<span id="${sid}" data-id="s${id}" data-txt="${txt}" data-word="${word}" style="" `);
+	mark = mark.replace(/>[^<]+</g, '>&nbsp;<');
+	$('#gtdp-markings').append(mark);
+	ggl_layoutMarking(sid);
 }
 
 /* exported ggl_prepareTexts */
@@ -180,6 +212,20 @@ function ggl_replaceResult(e) {
 	e = e.data;
 
 	if (e.success) {
+		let cmr = cmarking.get(0).getBoundingClientRect();
+		let ms = $('span.marking').get();
+		for (let i=0 ; i<ms.length ; ++i) {
+			if (ms[i].getBoundingClientRect().top < cmr.top) {
+				continue;
+			}
+			if (ms[i] === cmarking.get(0)) {
+				continue;
+			}
+			if (!ggl_layoutMarking(ms[i])) {
+				break;
+			}
+		}
+
 		if (context && context.replace) {
 			context.replace();
 			context.replace = null;

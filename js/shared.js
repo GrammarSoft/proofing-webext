@@ -267,6 +267,17 @@ function findInTextNodes(tns, txt, word) {
 				break;
 			}
 		}
+		for (; ti < txt.length ; ++ti, ++nsi) {
+			let ml = tns[ns].textContent;
+			if (ml.charAt(nsi) !== txt.charAt(ti)) {
+				break;
+			}
+			//console.log([ti, txt.length, txt.charAt(ti), txt]);
+			if (nsi >= ml.length) {
+				++ns;
+				nsi = 0;
+			}
+		}
 		console.log([ti, txt.length, txt.charAt(ti), txt]);
 		//console.log([txt, word, tns, ns, nsi, ti]);
 

@@ -138,17 +138,20 @@ function handleReplace(e) {
 	}
 	e = e.data;
 
+	let mark = document.getElementById(e.id);
+	let id = mark.getAttribute('data-id');
+
 	let par = null;
 	let ps = document.getElementsByClassName('kix-paragraphrenderer');
 	for (let i=0 ; i<ps.length ; ++i) {
-		if (ps[i].hasAttribute('data-gtid') && ps[i].getAttribute('data-gtid') === e.id) {
+		if (ps[i].hasAttribute('data-gtid') && ps[i].getAttribute('data-gtid') === id) {
 			par = ps[i];
 			break;
 		}
 	}
 
 	if (!par) {
-		console.log('No such par: ' + e.id);
+		console.log('No such par: ' + id);
 		window.postMessage({type: 'gtdp-replace-result', success: false, why: 'errReplacePar'}, '*');
 		return;
 	}
@@ -158,19 +161,19 @@ function handleReplace(e) {
 	// Move the cursor to the target paragraph
 	let cur = ggl_getCursor();
 	let curp = cur.getBoundingClientRect();
-	let tgtp = par.getBoundingClientRect();
+	let tgtp = mark.getBoundingClientRect();
 
 	// Binary search
-	let repeat = 1024;
+	let repeat = 256;
 	if (rects_overlaps(curp, tgtp)) {
-		repeat = Math.ceil(Math.max(tc.length / 2, 32));
+		repeat = 32;
 	}
 
 	// ToDo: Make this a plain while() loop?
 	for (let i=0 ; i<10240 ; ++i) {
 		if (curp.top - tgtp.top < -2) {
 			console.log(`Down ${repeat} to the right`);
-			dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.right}, repeat});
+			dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.down}, repeat});
 
 			curp = cur.getBoundingClientRect();
 			if (curp.top - tgtp.top > 2) {
@@ -179,7 +182,7 @@ function handleReplace(e) {
 		}
 		else if (curp.top - tgtp.top > 2) {
 			console.log(`Up ${repeat} to the left`);
-			dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.left}, repeat});
+			dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.up}, repeat});
 
 			curp = cur.getBoundingClientRect();
 			if (curp.top - tgtp.top < -2) {
@@ -216,9 +219,6 @@ function handleReplace(e) {
 	if (m) {
 		//console.log([rx, m]);
 		expected = tc.replace(m[0], m[1] + e.rpl).replace(/\s+/ug, ' ');
-		m[1] = simplifyString(m[1]);
-		console.log(`Step ${m[1].length} right`);
-		dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.right}, repeat: m[1].length});
 	}
 	else {
 		console.log('Could not locate prefix and/or word in paragraph');
@@ -271,6 +271,21 @@ function handleReplace(e) {
 		return;
 	}
 
+	dispatchKeyEvent({etype: 'keydown', event: {keyCode: KeyCode.down}, repeat});
+
+	let ms = document.getElementsByClassName('marking');
+	for (let i=0 ; i<ms.length ; ++i) {
+		if (ms[i].getAttribute('data-id') === id) {
+			let txt = ms[i].getAttribute('data-txt');
+			rx.lastIndex = 0;
+			let m = rx.exec(txt);
+			if (m) {
+				txt = txt.replace(m[0], m[1] + e.rpl);
+				ms[i].setAttribute('data-txt', txt);
+				console.log(ms[i]);
+			}
+		}
+	}
 	window.postMessage({type: 'gtdp-replace-result', success: true}, '*');
 }
 

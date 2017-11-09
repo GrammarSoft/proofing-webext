@@ -487,7 +487,10 @@ function markingYellow() {
 }
 
 function _parseResult(rv) {
+	$('#gtdp-progress-bar').attr('value', to_send_i);
+
 	if (!rv.hasOwnProperty('c')) {
+		$('#gtdp-progress').hide();
 		$.featherlight.close();
 		console.log(rv);
 		return;
@@ -703,8 +706,11 @@ function _parseResult(rv) {
 	if (to_send_i < to_send.length) {
 		sendTexts();
 	}
-	else if (ms.length === 0) {
-		setTimeout(msgNoMarkingsFound, 100);
+	else {
+		$('#gtdp-progress').hide();
+		if (ms.length === 0) {
+			setTimeout(msgNoMarkingsFound, 100);
+		}
 	}
 }
 
@@ -714,10 +720,13 @@ function parseResult(rv) {
 	}
 	catch (e) {
 		console.log(e);
+		$('#gtdp-progress').hide();
 	}
 }
 
 function sendTexts() {
+	$('#gtdp-progress').show();
+	$('#gtdp-progress-bar').attr('max', to_send.length);
 	let text = '';
 
 	for (to_send_b = to_send_i ; to_send_i < to_send.length ; ++to_send_i) {
@@ -1080,7 +1089,8 @@ setTimeout(() => {
 		return;
 	}
 
-	$('.kix-zoomdocumentplugin-outer').first().append('<div id="gtdp-markings"></div>');
+	$('.kix-zoomdocumentplugin-outer').first().append('<div id="gtdp-markings"></div><div id="gtdp-progress"><div><progress id="gtdp-progress-bar" value="0" max="100"></progress></div></div>');
+	$('#gtdp-progress').hide();
 
 	let css = document.createElement('link');
 	css.rel = 'stylesheet';

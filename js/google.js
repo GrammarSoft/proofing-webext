@@ -134,7 +134,7 @@ function ggl_prepareTexts() {
 		}
 		context.ggl.elems[i].normalize();
 		let ptxt = getVisibleText(context.ggl.elems[i]);
-		ptxt = $.trim(ptxt.replace(/\u200b/g, '').replace(/\u00a0/g, ' ').replace(/  +/g, ' '));
+		ptxt = $.trim(ptxt.replace(/\u200b/g, '').replace(/\u00a0/g, ' ').replace(/  +/g, ' ').replace(/[●○■❖➢❏➔◆★]+/g, ' '));
 		if (!ptxt) {
 			continue;
 		}

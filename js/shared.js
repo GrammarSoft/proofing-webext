@@ -267,7 +267,7 @@ function findInTextNodes(tns, txt, word) {
 				break;
 			}
 		}
-		for (; ti < txt.length ; ++ti, ++nsi) {
+		for (; ti < txt.length && ns<tns.length ; ++ti, ++nsi) {
 			let ml = tns[ns].textContent;
 			if (ml.charAt(nsi) !== txt.charAt(ti)) {
 				break;
@@ -445,7 +445,9 @@ function findTextNodes(nodes) {
 
 /* exported findVisibleTextNodes */
 function findVisibleTextNodes(nodes) {
-	let tns = [], wsx = /\S/;
+	let tns = [];
+	let wsx = /\S/;
+	let text = false;
 	let wnd = window;
 
 	if (!$.isArray(nodes)) {
@@ -454,9 +456,13 @@ function findVisibleTextNodes(nodes) {
 
 	function _findVisibleTextNodes(node) {
 		if (node.nodeType === Node.TEXT_NODE) {
-			let nv = node.nodeValue.replace(/\u200b/g, '');
+			// Strip Google Docs bullet marks so those elements are not considered visible text
+			let nv = node.nodeValue.replace(/\u200b/g, '').replace(/[●○■❖➢❏➔◆★]+/g, '');
 			if (nv.length) {
 				tns.push(node);
+			}
+			if (wsx.test(nv)) {
+				text = true;
 			}
 		}
 		else if (node.nodeType === Node.ELEMENT_NODE) {
@@ -476,6 +482,10 @@ function findVisibleTextNodes(nodes) {
 	for (let i=0 ; i<nodes.length ; ++i) {
 		wnd = nodes[i].ownerDocument.defaultView;
 		_findVisibleTextNodes(nodes[i]);
+	}
+
+	if (!text) {
+		return [];
 	}
 	return tns;
 }

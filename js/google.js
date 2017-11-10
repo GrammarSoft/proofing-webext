@@ -36,6 +36,8 @@
 
 /* exported ggl_loaded */
 
+let ggl_parId = 0;
+
 /* exported ggl_replaceInContext */
 function ggl_replaceInContext(id, txt, word, rpl) {
 	window.postMessage({type: 'gtdp-replace', id, txt, word, rpl}, '*');
@@ -134,11 +136,9 @@ function ggl_createMarking(id, txt, word, mark) {
 /* exported ggl_prepareTexts */
 function ggl_prepareTexts() {
 	let to_send = [];
+	context.ggl.elems = context.ggl.elems.unique();
 
 	for (let i=0 ; i<context.ggl.elems.length ; ++i) {
-		if (context.ggl.elems[i].hasAttribute('data-gtid')) {
-			continue;
-		}
 		context.ggl.elems[i].normalize();
 		let ptxt = getVisibleText(context.ggl.elems[i]);
 		ptxt = $.trim(ptxt.replace(/\u200b/g, '').replace(/\u00a0/g, ' ').replace(/  +/g, ' ').replace(Const.Bullets, ' '));
@@ -146,8 +146,14 @@ function ggl_prepareTexts() {
 			continue;
 		}
 
-		let id = i+1;
-		context.ggl.elems[i].setAttribute('data-gtid', 's'+id);
+		let id = 0;
+		if (context.ggl.elems[i].hasAttribute('data-gtid')) {
+			id = parseInt(context.ggl.elems[i].getAttribute('data-gtid').substr(1));
+		}
+		else {
+			id = ++ggl_parId;
+			context.ggl.elems[i].setAttribute('data-gtid', 's'+id);
+		}
 
 		to_send.push({
 			i: id,
@@ -280,4 +286,13 @@ function ggl_handleMessage(e) {
 	case 'gtdp-check-loaded':
 		return ggl_checkLoaded(e);
 	}
+}
+
+/* exported ggl_handleKeys */
+function ggl_handleKeys(e) {
+	/*
+	On every key(press|down), check that the current paragraph matches the hash, and if not wipe the hash
+	Every 3 seconds, re-hash the paragraphs that there are cursors in and re-check them if the hash has changed
+	Every 3 seconds, check paragraphs without hashes
+	*/
 }

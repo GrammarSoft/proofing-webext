@@ -542,6 +542,8 @@ function _parseResult(rv) {
 			}
 		}
 
+		$('#gtdp-markings').find(`[data-id="s${id}"]`).remove();
+
 		rs += '<p id="s'+id+'">';
 		let space = 0;
 		let txt = '';
@@ -769,13 +771,12 @@ function sendTexts() {
 }
 
 function cleanContext() {
-	if (!context.e) {
+	if (!context.e || context.ggl) {
 		return;
 	}
 
 	let b = $(context.e).closest('html');
 
-	$('#gtdp-markings').text('');
 	$('.popover').remove();
 
 	// Google Docs, if there was a selection
@@ -1110,4 +1111,8 @@ setTimeout(() => {
 	document.body.appendChild(script);
 
 	window.addEventListener('message', ggl_handleMessage);
+
+	let e = $('.docs-texteventtarget-iframe').get(0).contentDocument;
+	e.addEventListener('keypress', ggl_handleKeys, {passive: true});
+	e.addEventListener('keydown', ggl_handleKeys, {passive: true});
 }, 750);

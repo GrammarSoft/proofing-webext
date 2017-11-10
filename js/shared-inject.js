@@ -6,7 +6,8 @@
  */
 'use strict';
 
-let Const = {
+/* exported Const */
+const Const = {
 	Bullets: /[●○■❖➢❏➔◆★]+/g,
 	NonLetter: /[^\d\wa-zA-ZéÉöÖæÆøØåÅ.,!;:]+/igu,
 };

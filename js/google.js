@@ -43,10 +43,11 @@ function ggl_replaceInContext(id, txt, word, rpl) {
 
 /* exported ggl_layoutMarking */
 function ggl_layoutMarking(sid) {
+	// ToDo: Detect manual/remote changes in the document and reflow markings
 	if (typeof sid !== 'string') {
 		sid = sid.getAttribute('id');
 	}
-	let mark = $('#'+sid);
+	let mark = $('.'+sid);
 	let id = mark.attr('data-id');
 	let txt = mark.attr('data-txt');
 	let word = mark.attr('data-word');
@@ -105,8 +106,13 @@ function ggl_layoutMarking(sid) {
 	}
 
 	if (mark !== spans) {
-		$('#'+sid).replaceWith(spans);
-		$('#'+sid).off().click(markingClick);
+		let ms = $('.'+sid);
+		while (ms.length > 1) {
+			ms.last().remove();
+			ms = $('.'+sid);
+		}
+		ms.replaceWith(spans);
+		$('.'+sid).off().click(markingClick);
 		return true;
 	}
 
@@ -119,6 +125,7 @@ function ggl_createMarking(id, txt, word, mark) {
 	txt = escHTML(txt);
 	word = escHTML(word);
 	mark = mark.replace('<span ', `<span id="${sid}" data-id="s${id}" data-txt="${txt}" data-word="${word}" style="" `);
+	mark = mark.replace('class="', `class="${sid} `);
 	mark = mark.replace(/>[^<]+</g, '>&nbsp;<');
 	$('#gtdp-markings').append(mark);
 	ggl_layoutMarking(sid);
@@ -134,7 +141,7 @@ function ggl_prepareTexts() {
 		}
 		context.ggl.elems[i].normalize();
 		let ptxt = getVisibleText(context.ggl.elems[i]);
-		ptxt = $.trim(ptxt.replace(/\u200b/g, '').replace(/\u00a0/g, ' ').replace(/  +/g, ' ').replace(/[●○■❖➢❏➔◆★]+/g, ' '));
+		ptxt = $.trim(ptxt.replace(/\u200b/g, '').replace(/\u00a0/g, ' ').replace(/  +/g, ' ').replace(Const.Bullets, ' '));
 		if (!ptxt) {
 			continue;
 		}

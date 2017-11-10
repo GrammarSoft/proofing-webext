@@ -224,95 +224,51 @@ function array_unique_json(arr) {
 
 /* exported findInTextNodes */
 function findInTextNodes(tns, txt, word) {
-	let rv = [];
-	let nonl = /[^\d\wa-zA-ZéÉöÖæÆøØåÅ.,]/igu;
-	let ns = 0;
-
-	let txts = [txt, word, ''];
-	for (let k=0 ; k<txts.length-1 ; ++k) {
-		let nsi = 0;
-		if (rv.length) {
-			nsi = rv[0].i;
-		}
-
-		let txt = txts[k];
-		let word = txts[k+1];
-		let ti = 0;
-		for (; txt.length && ns<tns.length ;) {
-			let ml = tns[ns].textContent;
-			for ( ; nsi<ml.length ; ++nsi) {
-				for (let tn=ti ; tn<txt.length && tn<ti+10 ; ++tn) {
-					if (txt.charAt(tn) === ml.charAt(nsi) || (txt.charAt(tn) === '\ue000' && nonl.test(ml.charAt(nsi)))) {
-						ti = tn;
-						// Find identical sequential letters, e.g. 1977
-						while (ti < txt.length-1 && txt.charAt(ti) === ml.charAt(nsi)) {
-							//console.log([ti, nsi, txt.charAt(ti), ml.charAt(nsi)]);
-							++ti;
-							++nsi;
-						}
-						break;
-					}
-				}
-				//console.log([ti, nsi, txt.charAt(ti), ml.charAt(nsi)]);
-				if (ti >= txt.length-1) {
-					break;
-				}
-			}
-
-			if (nsi >= ml.length) {
-				++ns;
-				nsi = 0;
-			}
-			if (ti >= txt.length-1) {
-				break;
-			}
-		}
-		for (; ti < txt.length && ns<tns.length ; ++ti, ++nsi) {
-			let ml = tns[ns].textContent;
-			if (ml.charAt(nsi) !== txt.charAt(ti)) {
-				break;
-			}
-			//console.log([ti, txt.length, txt.charAt(ti), txt]);
-			if (nsi >= ml.length) {
-				++ns;
-				nsi = 0;
-			}
-		}
-		console.log([ti, txt.length, txt.charAt(ti), txt]);
-		//console.log([txt, word, tns, ns, nsi, ti]);
-
-		let wi = 0;
-		for (; word.length && ns<tns.length ;) {
-			let did = false;
-			let ml = tns[ns].textContent;
-			while (nsi < ml.length && wi < word.length) {
-				if (/[\s\u200b]/.test(ml.charAt(nsi)) && !/\s/.test(word.charAt(wi))) {
-					//console.log([ns, nsi, wi, ml, word]);
-					did = true;
-					++nsi;
-				}
-				else if (!/[\s\u200b]/.test(ml.charAt(nsi)) && /\s/.test(word.charAt(wi))) {
-					//console.log([ns, nsi, wi, ml, word]);
-					did = true;
-					++wi;
-				}
-				else {
-					break;
-				}
-			}
-			if (nsi >= ml.length) {
-				++ns;
-				nsi = 0;
-			}
-			if (!did) {
-				break;
-			}
-		}
-		//console.log([word, tns, ns, nsi, wi]);
-		rv.push({n: tns[ns], i: nsi});
+	let tss = [];
+	for (let i=0 ; i<tns.length ; ++i) {
+		tss.push(tns[i].textContent);
 	}
-	console.log(rv);
+	tss = tss.join('\ue002');
 
+	let rx = '^('+txt.replace(Const.NonLetter, '\ue003').replace(/(.)/ug, '$1.*?')+')(.*?'+word.replace(Const.NonLetter, '\ue003').replace(/(.)/ug, '$1.*?')+')$';
+	rx = rx.replace(/\ue003\.\*\?/g, '.*?');
+	rx = rx.replace(/(\.\*\?)+/g, '.*?');
+	if (/\s/.test(word.charAt(0))) {
+		rx = rx.replace('.*?)(.*?', ')(.*?');
+	}
+	else {
+		rx = rx.replace('.*?)(.*?', '.*?)(');
+	}
+	if (/\s/.test(word.charAt(word.length-1))) {
+		rx = rx.replace('.*?)$', '.*?\\s.*?)');
+	}
+	else {
+		rx = rx.replace('.*?)$', ')');
+	}
+	rx = new RegExp(rx);
+	let m = rx.exec(tss);
+
+	let ns = (m[1].match(/\ue002/g) || []).length;
+	let nsi = Math.max(m[1].length - 1, 0);
+	if (ns !== 0) {
+		nsi -= m[1].lastIndexOf('\ue002');
+	}
+
+	let ne = (m[2].match(/\ue002/g) || []).length;
+	let nei = Math.max(m[2].length - 1, 0);
+	if (ne !== 0) {
+		nei -= m[2].lastIndexOf('\ue002');
+	}
+	else {
+		nei += nsi + ((ns==0&&ne==0&&nsi!=0) ? 2 : 1);
+	}
+	ne += ns;
+	console.log([m, tss, rx, ns, nsi, ne, nei]);
+
+	let rv = [
+		{n: tns[ns], i: nsi},
+		{n: tns[ne], i: nei},
+	];
 	return rv;
 }
 
@@ -320,7 +276,6 @@ function findInTextNodes(tns, txt, word) {
 function replaceInTextNodes(tns, txt, word, rpl) {
 	rpl = rpl.padEnd(word.length, '\ue111');
 
-	let nonl = /[^\d\wa-zA-ZéÉöÖæÆøØåÅ.,]/igu;
 	let ti = 0;
 	let ns = 0;
 	let nsi = 0;
@@ -329,7 +284,7 @@ function replaceInTextNodes(tns, txt, word, rpl) {
 		let i = 0;
 		for ( ; i<ml.length ; ++i) {
 			for (let tn=ti ; tn<txt.length && tn<ti+10 ; ++tn) {
-				if (txt.charAt(tn) === ml.charAt(i) || (txt.charAt(tn) === '\ue000' && nonl.test(ml.charAt(i)))) {
+				if (txt.charAt(tn) === ml.charAt(i) || (txt.charAt(tn) === '\ue000' && Const.NonLetter.test(ml.charAt(i)))) {
 					ti = tn;
 					// Find identical sequential letters, e.g. 1977
 					while (ti < txt.length-1 && txt.charAt(ti) === ml.charAt(i)) {
@@ -457,7 +412,7 @@ function findVisibleTextNodes(nodes) {
 	function _findVisibleTextNodes(node) {
 		if (node.nodeType === Node.TEXT_NODE) {
 			// Strip Google Docs bullet marks so those elements are not considered visible text
-			let nv = node.nodeValue.replace(/\u200b/g, '').replace(/[●○■❖➢❏➔◆★]+/g, '');
+			let nv = node.nodeValue.replace(/\u200b/g, '').replace(Const.Bullets, '');
 			if (nv.length) {
 				tns.push(node);
 			}

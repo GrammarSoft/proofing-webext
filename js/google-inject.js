@@ -155,7 +155,7 @@ function handleReplace(e) {
 		return;
 	}
 
-	let tc = par.textContent.replace(/\u200b/g, '');
+	let tc = par.textContent.replace(/\u200b/g, '').replace(Const.Bullets, '');
 
 	// Move the cursor to the target paragraph
 	let cur = ggl_getCursor();
@@ -213,7 +213,7 @@ function handleReplace(e) {
 	// Determine whether and where to work
 	// ToDo: Test surrogate pairs and combining marks in {txt, word, rpl}
 	let expected = '';
-	let rx = new RegExp('^('+e.txt.replace(/[^\d\wa-zA-ZéÉöÖæÆøØåÅ.,!;:]+/igu, '.*?')+'\\s*)'+escapeRegExpTokens(e.word));
+	let rx = new RegExp('^('+e.txt.replace(Const.NonLetter, '.*?')+'\\s*)'+escapeRegExpTokens(e.word));
 	let m = rx.exec(tc);
 	if (m) {
 		//console.log([rx, m]);
@@ -262,7 +262,7 @@ function handleReplace(e) {
 		++undo;
 	}
 
-	tc = par.textContent.replace(/\u200b/ug, '').replace(/\s+/ug, ' ');
+	tc = par.textContent.replace(/\u200b/ug, '').replace(Const.Bullets, '').replace(/\s+/ug, ' ');
 	if (tc !== expected) {
 		console.log([tc, expected]);
 		dispatchUndo(undo);

@@ -6,6 +6,11 @@
  */
 'use strict';
 
+let Const = {
+	Bullets: /[●○■❖➢❏➔◆★]+/g,
+	NonLetter: /[^\d\wa-zA-ZéÉöÖæÆøØåÅ.,!;:]+/igu,
+};
+
 /* exported ggl_getCursor */
 function ggl_getCursor() {
 	let cs = document.getElementsByClassName('kix-cursor');
@@ -35,7 +40,7 @@ function escapeRegExpTokens(txt) {
 	for (let i=0 ; i<ts.length ; ++i) {
 		ts[i] = escapeRegExp(ts[i]);
 	}
-	return ts.join('\\s+');
+	return ts.join('[\\s\\u200b]+');
 }
 
 /* exported simplifyString */

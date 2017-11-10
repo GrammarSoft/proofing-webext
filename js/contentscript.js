@@ -107,6 +107,9 @@ function markingPopup(c, exp) {
 	}
 	cmarking = $(c);
 	cmarking.focus().addClass('marking-selected');
+	if (cmarking.attr('id')) {
+		$('.'+cmarking.attr('id')).focus().addClass('marking-selected');
+	}
 	//console.log([c.offset(), c.width(), p.width()]);
 
 	let all_upper = is_upper(markingWord(cmarking));

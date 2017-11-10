@@ -236,6 +236,15 @@ function ggl_replaceResult(e) {
 		// Move markings that may have gotten out of place due to the replacement action
 		let cmr = cmarking.get(0).getBoundingClientRect();
 		let ms = $('span.marking').get();
+		ms.sort((a, b) => {
+			let ar = a.getBoundingClientRect();
+			let br = b.getBoundingClientRect();
+			if (ar.top != br.top) {
+				return ar.top - br.top;
+			}
+			return ar.left - br.left;
+		});
+
 		let seen = false;
 		for (let i=0 ; i<ms.length ; ++i) {
 			// Skip the point of change
@@ -291,8 +300,9 @@ function ggl_handleMessage(e) {
 /* exported ggl_handleKeys */
 function ggl_handleKeys(e) {
 	/*
-	On every key(press|down), check that the current paragraph matches the hash, and if not wipe the hash
-	Every 3 seconds, re-hash the paragraphs that there are cursors in and re-check them if the hash has changed
-	Every 3 seconds, check paragraphs without hashes
+	On every key(press|down), check that the current paragraph matches the hash, and if not wipe the hash and all marks and reset the check timer
+	Every 3 seconds, for every paragraph with a cursor in, ditto
+	Every 3 seconds, for every unanalyzed paragraph, ditto
+	Detect format changes somehow, then move affected markings
 	*/
 }
